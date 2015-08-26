@@ -1,0 +1,27 @@
+{
+    "name": "enchanting/migrate-ts",
+    "description": "This is a php script to help Travel Maker to migrate DATA from Travel Studio Database to Native Database.",
+    "type": "stand-alone",
+    "require": {
+        "illuminate/database": "^5.1",
+        "keboola/csv": "^1.1",
+        "symfony/yaml": "*",
+        "illuminate/html": "*",
+        "nesbot/carbon": "^1.20"
+    },
+
+    "autoload": {
+        "classmap": [
+            "src/"
+        ]
+    },
+
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Jyothu",
+            "email": "jyothu.kr@gmail.com"
+        }
+    ],
+    "minimum-stability": "stable"
+}
