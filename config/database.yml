@@ -15,8 +15,8 @@ production:
   charset: utf8
   database: rates
   collation: utf8_unicode_ci
-  username: #todo
-  password: #todo
+  username: builder
+  password: 'tr@velm@ker'
   timeout: 10000
   prefix: ''
   # port: 3306
