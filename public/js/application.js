@@ -12,7 +12,7 @@ $(document).ready(function(){
 	var getRates = function( myForm ){
 		$.ajax({
 	        type: "post",
-	        url: "/service/rates",
+	        url: "service/rates",
 	        data: myForm.serialize(),
 	        success: function( data ) {
 	            $("#result").html( data );
@@ -28,7 +28,7 @@ $(document).ready(function(){
     var callAjaxForOptions = function( serviceId ){
  	    $.ajax({
             type: "post",
-            url: "/service/options",
+            url: "service/options",
             data: "service="+serviceId,
             success: function( data ) {
             	if( data == "Invalid Service ID" ){
