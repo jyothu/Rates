@@ -10,10 +10,10 @@
         <span class='display-block'>START : {{ $price->start }}</span>
         <span class='display-block'>END : {{ $price->end }}</span>
       </td>
-      <td>{{ $price->buy_price }}</td>
-      <td>{{ $price->sell_price }}</td>
+      <td>{{ number_format($price->buy_price) }}</td>
+      <td>{{ number_format($price->sell_price) }}</td>
       @if ($key == 0)
-        <td rowspan="{{ count($prices) }}">{{ $totalBuyingPrice }}</td><td rowspan="{{ count($prices) }}">{{ $totalSellingPrice }}</td>
+        <td rowspan="{{ count($prices) }}">{{ number_format($totalBuyingPrice) }}</td><td rowspan="{{ count($prices) }}">{{ number_format($totalSellingPrice) }}</td>
       @endif
     </tr>
   @endforeach
