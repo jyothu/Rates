@@ -29,8 +29,8 @@ CREATE TABLE `currencies` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 CREATE TABLE `suppliers` (
-  `id` bigint(12) NOT NULL,
-  `name` varchar(255) NOT NULL UNIQUE,
+  `id` bigint(12) NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) NOT NULL,
   `description` text(1000) DEFAULT NULL,
   `region_id` bigint(12) NOT NULL,
   `status` tinyint(1) DEFAULT 1,
@@ -133,7 +133,7 @@ CREATE TABLE `meal_options` (
 CREATE TABLE `seasons` (
   `id` bigint(12) NOT NULL AUTO_INCREMENT,
   `service_id` bigint(12) NOT NULL,
-  `name` varchar(255) NOT NULL UNIQUE,
+  `name` varchar(255) NOT NULL,
   `status` tinyint(1) DEFAULT 1,
   `created_at` datetime DEFAULT NULL,
   `updated_at` datetime DEFAULT NULL,

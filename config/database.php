@@ -6,7 +6,7 @@ use Symfony\Component\Yaml\Parser;
 $yaml = new Parser();
 $env = getenv("ENVIRONMENT") ? getenv("ENVIRONMENT") : "production";
 $env = "development";
-$dbConfig = $yaml->parse( file_get_contents('../config/database.yml') );
+$dbConfig = $yaml->parse( file_get_contents('config/database.yml') );
 
 $capsule = new Capsule; 
 $capsule->addConnection( $dbConfig[$env] );

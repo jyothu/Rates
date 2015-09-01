@@ -52,6 +52,7 @@ foreach($csvFile as $row) {
     	'supplier_id' => $supplierObj->id,
     	'name' => $serviceName
     );
+
     $serviceObj = Models\Service::firstOrCreate( $serviceParams );
 
     // Find or Create Season
