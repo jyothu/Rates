@@ -26,12 +26,13 @@ $(document).ready(function(){
     });
 
     var callAjaxForOptions = function( serviceId ){
+        $("#alert").html('');
  	    $.ajax({
             type: "post",
             url: "service/options",
             data: "service="+serviceId,
             success: function( data ) {
-            	if( data == "Invalid Service ID" ){
+            	if( data.error == "Invalid Service ID" ){
             	    warning = "<div class='alert alert-warning fade in'>";
             	    warning += "<a href='#'' class='close' data-dismiss='alert'>&times;</a>";
             	    warning += "No Service Option found for the Service ID entered. Please try with another.</div>";

@@ -17,6 +17,9 @@ class RateController extends BaseController
         $serviceId = Input::get('service');
         $service = $this->ratesRepo->getServiceById($serviceId);
         $serviceOptions = isset( $service ) ? $service->service_options : [];
+        if (empty($serviceOptions)) {
+            return ['error' => 'Invalid Service ID'];
+        }
         //returns html of options as string just like echo
         return View::make('partials.rateOptions')->with('serviceOptions', $serviceOptions)->render();
     }
