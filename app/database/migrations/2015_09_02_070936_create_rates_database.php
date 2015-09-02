@@ -226,6 +226,7 @@ class CreateRatesDatabase
             $table->bigInteger('priceable_id');
             $table->string('priceable_type', 255);
             $table->bigInteger('season_period_id')->unsigned();
+            $table->bigInteger('service_id');
             $table->decimal('buy_price', 10, 2);
             $table->decimal('sell_price', 10, 2);
             $table->boolean('has_details')->nullable();
@@ -234,6 +235,7 @@ class CreateRatesDatabase
             $table->dateTime('updated_at')->nullable();
             $table->engine = 'InnoDB';
             $table->foreign('season_period_id')->references('id')->on('season_periods');
+            $table->foreign('service_id')->references('id')->on('services');
         });
     }
  
@@ -243,19 +245,19 @@ class CreateRatesDatabase
  
     public function down()
     {
-        Schema::drop('currencies');
-        Schema::drop('exchange_rates');
-        Schema::drop('meal_options');
-        Schema::drop('meals');
-        Schema::drop('occupancies');
         Schema::drop('prices');
-        Schema::drop('regions');
         Schema::drop('season_periods');
         Schema::drop('seasons');
+        Schema::drop('meal_options');
         Schema::drop('service_extras');
         Schema::drop('service_options');
-        Schema::drop('service_types');
+        Schema::drop('meals');
+        Schema::drop('occupancies');
+        Schema::drop('exchange_rates');
         Schema::drop('services');
         Schema::drop('suppliers');
+        Schema::drop('currencies');
+        Schema::drop('regions');
+        Schema::drop('service_types');
     }
 }
