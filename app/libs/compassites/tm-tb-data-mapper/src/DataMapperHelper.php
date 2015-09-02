@@ -11,16 +11,23 @@ use Compassites\DateHelper\DateHelper;
  */
 
 /**
- * Description of CurlHelper
+ * Description of DataMapperHelper
  *
  * @author jeevan
  */
 class DataMapperHelper
 {
 
-    public function __construct(DateHelper $dateHelper)
+    protected $servicesAtItineraryLevel;
+    protected $travelStudio;
+    protected $dateHelper;
+
+    public function __construct(DateHelper $dateHelper, \Service $service, \Illuminate\Database\Eloquent\Collection $collection, \Compassites\TravelStudioClient\TravelStudioClient $travelStudio)
     {
         $this->dateHelper = $dateHelper;
+        $this->service = $service;
+        $this->servicesAtItineraryLevel = $collection;
+        $this->travelStudio = $travelStudio;
     }
 
     function getSessionDataArrayFromItineraryObject($itinerary)
@@ -53,9 +60,8 @@ class DataMapperHelper
                 'internalservice_id' => implode("|", $internalservice_id),
                 'internalservice_price_list' => implode("|", $internalservice_price_list),
                 'internalservice_price' => $internalservice_price,
-                'adjustment1' => $itinerary->adjustment1,
-                'adjustment2' => $itinerary->adjustment2,
-                'adjustment_remark' => $itinerary->adjustment_remark
+                'v3_itinerary_id' => $itinerary->v3_itinerary_id,
+                'ts_booking_id' => $itinerary->ts_booking_id,
             );
 
             foreach ($itinerary->cities as $key => $city) {
@@ -78,14 +84,10 @@ class DataMapperHelper
                     //$hotel1_price = $hotel1Obj->hotel_price;
                 }
                 foreach ($option1['services'] as $itinararyService) {
-
-                    $serviceArray = (array) $itinararyService->service;
-                    if (!empty($serviceArray)) {
-                        $service_id[] = $itinararyService->service->service_tsid;
-                        $service[] = $itinararyService->service->service_name;
-                        $service_price[] = $itinararyService->service_price;
-                        $service_total_price+=$itinararyService->service_price;
-                    }
+                    $service_id[] = $itinararyService->service->service_tsid;
+                    $service[] = $itinararyService->service->service_name;
+                    $service_price[] = $itinararyService->service_price;
+                    $service_total_price+=$itinararyService->service_price;
                 }
 
                 $service2_total_price = 0;
@@ -104,13 +106,10 @@ class DataMapperHelper
                     //$hotel2_price = $hotel2Obj->hotel_price;
                 }
                 foreach ($option2['services'] as $itinararyService) {
-                    $serviceArray = (array) $itinararyService->service;
-                    if (!empty($serviceArray)) {
-                        $service2_id[] = $itinararyService->service->service_tsid;
-                        $service2[] = $itinararyService->service->service_name;
-                        $service2_price[] = $itinararyService->service_price;
-                        $service2_total_price+=$itinararyService->service_price;
-                    }
+                    $service2_id[] = $itinararyService->service->service_tsid;
+                    $service2[] = $itinararyService->service->service_name;
+                    $service2_price[] = $itinararyService->service_price;
+                    $service2_total_price+=$itinararyService->service_price;
                 }
                 $sessionData['city'][$key]['city'] = array(
                     'nights' => $city->number_of_nights,
@@ -161,90 +160,191 @@ class DataMapperHelper
         return $sessionData;
     }
 
-    function prepareItineraryDataFromItineraryToSendToTM($itinerary)
+    function prepareItineraryDataFromItineraryToSendToTM($itinerary, $tmb3ItineraryId = null)
     {
         $itinerary->load('internalServices', 'cities');
         foreach ($itinerary->cities as $city) {
             $city->load('activities');
-            $city->load('services');
+        }
+        $option1_price = $itinerary->option1_price;
+        $option2_price = $itinerary->option2_price;
+        $itinerary->option1_price = $itinerary->price1_for2_people;
+        $itinerary->option2_price = $itinerary->price2_for2_people;
+        if ($tmb3ItineraryId > 0) {
+//            $itinerary->itinerary_id = $tmb3ItineraryId;
         }
         $dataToSend['itinerary'] = $itinerary->toJson();
         $dataToSend['tmpostid'] = $itinerary->tmpostid;
+        $itinerary->option1_price = $option1_price;
+        $itinerary->option2_price = $option2_price;
         return $dataToSend;
     }
 
-    function prepareItineraryDataFromItineraryToReservation($itinerary)
+    function prepareItineraryDataFrom3For4($itineraryDataArray)
     {
-        $itinerary->load('internalServices', 'cities', 'proposalReservations');
-        foreach ($itinerary->cities as $city) {
-            $city->load('activities');
-            $city->load('services');
-        }
-        foreach ($itinerary->proposalReservations as $prop) {
-            $prop->load('proposalReservationServices');
-        }
-        $dataToSend['itinerary'] = $itinerary->toJson();
-        $dataToSend['tmpostid'] = $itinerary->tmpostid;
-        return $dataToSend;
-    }
-
-    function prepareItineraryDataFrom4For3($itineraryDataArray)
-    {
-        $itinerary = $this->saveItineraryDataFrom4To3($itineraryDataArray);
-        $this->saveInternalServicesDataFrom4To3($itineraryDataArray, $itinerary);
-        $this->saveCityDataFrom4To3($itineraryDataArray, $itinerary);
+        $itinerary = $this->saveItineraryDataFrom3To4($itineraryDataArray);
+        $this->saveInternalServicesDataFrom3To4($itineraryDataArray, $itinerary);
+        $this->saveCityDataFrom3To4($itineraryDataArray, $itinerary);
+        $this->saveItineraryLevelServices($itinerary);
         return $itinerary;
     }
 
-    function saveCityActivityDataFrom4To3($itineraryCityDataArray, $itineraryCity)
+    function saveItineraryLevelServices($itinerary)
+    {
+        if ($this->servicesAtItineraryLevel->count() > 0) {
+            $this->servicesAtItineraryLevel->each(function ($tineraryService) use ($itinerary) {
+                $tineraryService->itinerary_city_id = 0;
+                $tineraryService->itinerary_id = $itinerary->itinerary_id;
+                $tineraryService->option_type = 0;
+                $tineraryService->save();
+                $this->saveServcieOptions($tineraryService->service->service_id, $tineraryService->service->service_type, $tineraryService->service->service_tsid, $tineraryService->from_date, 1, $itinerary->currency, ['itinerary_service_id' => $tineraryService->itinerary_service_id]);
+            });
+        }
+    }
+
+    function saveCityActivityDataFrom3To4($itineraryCityDataArray, $itineraryCity)
     {
         $field3to4MappingArray = [];
         $defaultFieldValueArray = ['itinerary_activity_id' => null, "itinerary_city_id" => $itineraryCity->itinerary_city_id];
         foreach ($itineraryCityDataArray['activities'] as $dataArray) {
             $modelObject = $this->createObjectFromDataAndTableName("itinerary_activity", $dataArray, $field3to4MappingArray, $defaultFieldValueArray);
             $modelObject->save();
+            $this->saveServcieOptions($modelObject->activity->activity_id, $modelObject->activity->service_type, $modelObject->activity->activity_tsid, $modelObject->from_date, 1, $itineraryCity->itinerary->currency, ['itinerary_activity_id' => $modelObject->itinerary_activity_id]);
         }
     }
 
-    function saveCityServiceDataFrom4To3($itineraryCityDataArray, $itineraryCity)
+    function saveCityServiceDataFrom3To4($itineraryCityDataArray, $itineraryCity)
     {
         $field3to4MappingArray = [];
+        $itineraryCityDataArrayFiltered['option1']['services'] = [];
+        $itineraryCityDataArrayFiltered['option2']['services'] = [];
+
         $defaultFieldValueArray = ['itinerary_service_id' => null, "itinerary_city_id" => $itineraryCity->itinerary_city_id];
+        foreach ($itineraryCityDataArray['option1']['services'] as $dataArray1) {
+            foreach ($itineraryCityDataArray['option2']['services'] as $k => $dataArray2) {
+                if ($dataArray2['service']['service_type'] == 4 && $dataArray1['service_id'] == $dataArray2['service_id']) {
+                    unset($itineraryCityDataArray['option2']['services'][$k]);
+                }
+            }
+        }
+        if (!(count($itineraryCityDataArray['option2']['services']) > 0) && (count($itineraryCityDataArray['option1']['services']) > 0)) {
+            $itineraryCityDataArray['option2']['services'] = $itineraryCityDataArray['option1']['services'];
+            foreach ($itineraryCityDataArray['option2']['services'] as $i => $serv) {
+                $itineraryCityDataArray['option2']['services'][$i]['option_type'] = 2;
+            }
+        }
+        foreach ($itineraryCityDataArray['option1']['services'] as $dataArray1) {
+            foreach ($itineraryCityDataArray['option2']['services'] as $k => $dataArray2) {
+                if ($dataArray2['service']['service_type'] == 4 && $dataArray1['service_id'] == $dataArray2['service_id']) {
+                    unset($itineraryCityDataArray['option2']['services'][$k]);
+                }
+            }
+        }
         foreach (array('option1', 'option2') as $option) {
             foreach ($itineraryCityDataArray[$option]['services'] as $dataArray) {
+                $v4ServcieObj = $this->service->where("service_tsid", "=", $dataArray['service']['service_tsid'])->first();
+                if ($v4ServcieObj) {
+                    $dataArray['service']['service_id'] = $v4ServcieObj->service_id;
+                    $dataArray['service_id'] = $v4ServcieObj->service_id;
+                } else {
+                    break;
+                }
                 $modelObject = $this->createObjectFromDataAndTableName("itinerary_service", $dataArray, $field3to4MappingArray, $defaultFieldValueArray, 'ItinararyService');
-                $modelObject->save();
+                $modelObject->from_date;
+                if ($modelObject->from_date == '0000-00-00') {
+                    $modelObject->from_date = $itineraryCity->from_date;
+                    $modelObject->to_date = $itineraryCity->to_date;
+                }
+                $modelObject->nights = $this->dateHelper->dateDifferenceInDays($modelObject->to_date, $itineraryCity->from_date);
+                if (!((int) $modelObject->nights > 0)) {
+                    $modelObject->nights = 1;
+                    $modelObject->to_date = $this->dateHelper->addDaysToDate($modelObject->from_date, 1);
+                }
+                if ($this->isItineraryLevelService($modelObject)) {
+                    $this->servicesAtItineraryLevel->add($modelObject);
+                } else {
+                    $modelObject->save();
+                    if ($modelObject && $modelObject->service) {
+                        $hotelOptionNumber = $option == 'option1' ? 1 : 2;
+                        $modelObject->load('service');
+                        $this->saveServcieOptions($modelObject->service->service_id, $modelObject->service->service_type, $modelObject->service->service_tsid, $itineraryCity->from_date, 1, $itineraryCity->itinerary->currency, ['option_type' => $hotelOptionNumber, 'itinerary_service_id' => $modelObject->itinerary_service_id]);
+                    }
+                }
             }
         }
     }
 
-    function saveCityDataFrom4To3($itineraryDataArray, $itinerary)
+    function isItineraryLevelService($itinararyService)
+    {
+        $isItineraryLevelService = false;
+        if ($itinararyService->service_id > 0) {
+            $service_id = $itinararyService->service_id;
+            $service = \Service::where('service_id', '=', $service_id)->first();
+            if ($service) {
+                $region = \Region::where('region_tsid', '=', $service->region_id)->first();
+                $isItineraryLevelService = $region->region_parent_id > 0 ? false : true;
+            }
+        }
+        return $isItineraryLevelService;
+    }
+
+    function saveCityDataFrom3To4($itineraryDataArray, $itinerary)
     {
         $field3to4MappingArray = [];
         $defaultFieldValueArray = ['itinerary_city_id' => null, "itinerary_id" => $itinerary->itinerary_id];
         foreach ($itineraryDataArray['cities'] as $dataArray) {
+            if ($dataArray['hotel1_id'] > 0 && !($dataArray['hotel2_id'] > 0)) {
+                $dataArray['hotel2_id'] = $dataArray['hotel1_id'];
+                $dataArray['hotel2_price'] = $dataArray['hotel1_price'];
+            }
+            $region_tsid = array_get($dataArray, 'region.region_tsid', null);
+            if ($region_tsid > 0) {
+                $region = \Region::where('region_tsid', '=', $region_tsid)->first();
+                $dataArray['region_id'] = $region ? $region->region_id : 0;
+            }
             $modelObject = $this->createObjectFromDataAndTableName("itinerary_city", $dataArray, $field3to4MappingArray, $defaultFieldValueArray);
             $modelObject->save();
-            $this->saveCityActivityDataFrom4To3($dataArray, $modelObject);
-            $this->saveCityServiceDataFrom4To3($dataArray, $modelObject);
+            $this->saveCityActivityDataFrom3To4($dataArray, $modelObject);
+            $this->saveCityServiceDataFrom3To4($dataArray, $modelObject);
+            foreach (['1', '2'] as $hotelOptionNumber) {
+                $hotelId = "hotel{$hotelOptionNumber}_id";
+                $hotelAttr = "hotel{$hotelOptionNumber}";
+                if ($modelObject->$hotelId > 0) {
+                    $hotelObj = $modelObject->$hotelAttr;
+                    if ($hotelObj && $hotelObj->hotel_id > 0) {
+                        $this->saveServcieOptions($modelObject->$hotelId, 2, $hotelObj->hotel_tsid, $modelObject->from_date, 1, $itinerary->currency, ['option_type' => $hotelOptionNumber, 'itinerary_city_id' => $modelObject->itinerary_city_id]);
+                    }
+                }
+            }
         }
     }
 
-    function saveInternalServicesDataFrom4To3($itineraryDataArray, $itinerary)
+    function saveInternalServicesDataFrom3To4($itineraryDataArray, $itinerary)
     {
         $field3to4MappingArray = [];
         $defaultFieldValueArray = ['itinerary_internal_service_id' => null, "itinerary_id" => $itinerary->itinerary_id];
         foreach ($itineraryDataArray['internal_services'] as $dataArray) {
             $modelObject = $this->createObjectFromDataAndTableName("itinerary_internal_service", $dataArray, $field3to4MappingArray, $defaultFieldValueArray, 'ItenararyInternalService');
+            if ($modelObject->start_date == '0000-00-00' || !$modelObject->start_date) {
+                $modelObject->start_date = $this->dateHelper->removeTimeFromMysqlDateTime($itinerary->start_date);
+                $modelObject->end_date = $this->dateHelper->addDaysToDate($modelObject->start_date, 1);
+            }
+            $modelObject->nights = $this->dateHelper->dateDifferenceInDays($modelObject->end_date, $modelObject->start_date);
+            if (!$modelObject->adult_count || $modelObject->adult_count == 0) {
+                $modelObject->adult_count = 2;
+                $modelObject->child_count = 0;
+            }
             $modelObject->save();
+            $this->saveServcieOptions($modelObject->internalService->service_id, 20, $modelObject->internalService->service_tsid, $modelObject->start_date, 1, $itinerary->currency, ['itinerary_internal_service_id' => $modelObject->itinerary_internal_service_id]);
         }
     }
 
-    function saveItineraryDataFrom4To3($itineraryDataArray)
+    function saveItineraryDataFrom3To4($itineraryDataArray)
     {
-        $field3to4MappingArray = ['remarks' => 'adjustment_remark'];
-        $defaultFieldValueArray = ["itinerary_id" => null];
+        $field3to4MappingArray = ['adjustment_remark' => 'remarks'];
+        $defaultFieldValueArray = ['adult' => 2, "itinerary_id" => null];
         $itinerary = $this->createObjectFromDataAndTableName("itinerary", $itineraryDataArray, $field3to4MappingArray, $defaultFieldValueArray);
+        $itinerary->v3_itinerary_id = $itineraryDataArray['itinerary_id'];
         $itinerary->save();
         return $itinerary;
     }
@@ -271,6 +371,56 @@ class DataMapperHelper
             $modelObject->$field = trim($value);
         }
         return $modelObject;
+    }
+
+    function removeAllItinerarRelatedServices($itinerary)
+    {
+        foreach ($itinerary->cities as $city) {
+            $city->delete();
+        }
+        foreach ($itinerary->itinararyServices as $itinararyServices) {
+            $itinararyServices->delete();
+        }
+        foreach ($itinerary->internalServices as $internalServices) {
+            $internalServices->delete();
+        }
+    }
+
+    function saveServcieOptions($serviceId, $serviceTypeId, $serviceTsid, $dateOnWhichServiceIsRequired, $nightsForWhichServiceIsRequired, $currencyCode, $relationArray = [])
+    {
+        $limitToOneRoomType = false;
+        if ($serviceTypeId == 2) {
+            $limitToOneRoomType = true;
+        }
+        $this->travelStudio->getServicesPricesAndAvailability($serviceTsid, $serviceTypeId, $dateOnWhichServiceIsRequired, $nightsForWhichServiceIsRequired, $currencyCode, $limitToOneRoomType);
+
+        $defaultServiceOption = $this->travelStudio->defaultServiceOption;
+        if (count($defaultServiceOption) > 0) {
+            $mappedDbFields = array(
+                'service_id' => '',
+                'service_type_id' => '',
+                'service_tsid' => '',
+                'option_type' => '',
+                'option_id' => 'OptionID',
+                'option_name' => 'ServiceOptionName',
+                'quantity' => null,
+                'adult_count' => 'adultCount',
+                'child_count' => 'childCount',
+                'option_price' => 'TotalSellingPrice',
+                'occupancy' => 'Occupancy'
+            );
+            foreach ($mappedDbFields as $mappedDbField => $responseKey) {
+                if (array_key_exists($responseKey, $defaultServiceOption)) {
+                    $mappedDbFields[$mappedDbField] = $defaultServiceOption[$responseKey];
+                }
+            }
+            $defaultFieldValueArray = ['quantity' => 1, 'adult_count' => 2, "service_id" => $serviceId, "service_type_id" => $serviceTypeId, "service_tsid" => $serviceTsid];
+            if (count($relationArray) > 0) {
+                $defaultFieldValueArray = array_merge($defaultFieldValueArray, $relationArray);
+            }
+            $serviceOption = $this->createObjectFromDataAndTableName("service_options", $mappedDbFields, null, $defaultFieldValueArray, "ServiceOption");
+            $serviceOption->save();
+        }
     }
 
 }

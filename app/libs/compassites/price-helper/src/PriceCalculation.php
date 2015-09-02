@@ -16,241 +16,251 @@ use Compassites\DateHelper\DateHelper;
  *
  * @author senthil
  */
-class PriceCalculation {
+class PriceCalculation
+{
 
     private $priceResponseError;
     private $priceResponseErrorMessage;
-   // private $priceResponseWarn;
     private $priceResponseWarnMessage;
     private $priceResponseWarn = array();
-    /*
-     *  @name  getCityItineraryPrice
-     *  @param array
-     *  @return array
-     */
 
-    public function __construct(TravelStudioClient $travelStudioClient, DateHelper $dateHelper) {
+    public function __construct(TravelStudioClient $travelStudioClient, DateHelper $dateHelper, \GeneralSetting $generalSetting)
+    {
         $this->travelStudioClient = $travelStudioClient;
         $this->dateHelper = $dateHelper;
-        $this->priceResponseError   = array();
-        //$this->priceResponseWarn  =  array();
+        $this->generalSetting = $generalSetting;
     }
 
-    function getCityItineraryPrice($data) {
+    function getCityItineraryPrice($data)
+    {
         $price1 = 0;
         $price2 = 0;
-        if (!empty($data) && $data['city']) {
-            $servicePrice1 = $data['city']['service_total_price'];
-            $servicePrice2 = $data['city']['service2_total_price'];
-            $price1 += $servicePrice1;
-            $price1 += $data['city']['hotel_price'];
+        if (!empty($data)) {
 
-            $price2 += ((empty($data['city']['hotel2'])) ?
-                            $servicePrice1 : $servicePrice2);
-            $price2 += ((empty($data['city']['hotel2'])) ?
-                            $data['city']['hotel_price'] : $data['city']['hotel2_price']);
-
-
-            if (!empty($data['activities'])) {
-                $price1 += array_sum($data['activities']['price']);
-                $price2 += array_sum($data['activities']['price']);
+            if (!empty($data['optionone'])) {
+                if (!empty($data['optionone']['arrivalDetail'])) {
+                    $price1 += $this->getServiceTotalPrice($data['optionone']['arrivalDetail']);
+                }
+                if (!empty($data['optionone']['hotel'])) {
+                    $price1 += $data['optionone']['hotel']['selectedHotelPrice'];
+                }
             }
-
-            if (!empty($data['guides'])) {
-                $price1 += array_sum($data['guides']['price']);
-                $price2 += array_sum($data['guides']['price']);
+            if (!empty($data['optiontwo'])) {
+                if (!empty($data['optiontwo']['arrivalDetail'])) {
+                    $price2 += $this->getServiceTotalPrice($data['optiontwo']['arrivalDetail']);
+                }
+                if (!empty($data['optiontwo']['hotel'])) {
+                    $price2 += $data['optiontwo']['hotel']['selectedHotelPrice'];
+                }
+            } else {
+                $price1 = $price2;
             }
         }
         $result = array('price1' => $price1, 'price2' => $price2);
-
         return $result;
     }
 
-    public function getAdjustablePrice($currency = 'USD', $amount) {
+    private function getServiceTotalPrice($data)
+    {
 
-        $currency = strtoupper($currency);
-        $multiplier = \GeneralSetting::where('currency', '=', $currency)->take(1)->get()[0]['multiplier'];
+        $price = 0;
+        foreach ($data as $dataKey => $dataValue) {
+            $price +=$dataValue['servicePrice'];
+        }
 
-        return $amount * $multiplier;
+        return $price;
     }
 
-    public function reArrageItinerarayDates($itinerary, $data) {
+    public function getOccupancyIdFromPassengerCount($adult, $child = 0)
+    {
+
+        $occupancyId = 2;
+        if ($adult > 0) {
+            $occupancy = \HotelRoomType::where("max_adult", "=", $adult)->where("max_children", "=", $child)->first();
+            if ($child > 0 && !$occupancy) {
+                $occupancy = \HotelRoomType::where("max_adult", "=", $adult)->where("max_children", ">=", $child)->orderBy('max_children', 'ASC')->first();
+                if (!$occupancy) {
+                    $occupancy = \HotelRoomType::where("max_adult", ">=", $adult)->where("max_children", ">=", $child)->orderBy('max_adult', 'ASC')->first();
+                }
+            }
+            if (!$occupancy) {
+                $occupancy = \HotelRoomType::where("max_adult", "=", $adult)->first();
+            }
+            if (!$occupancy) {
+                $occupancy = \HotelRoomType::where("max_adult", ">", $adult)->orderBy('max_adult', 'ASC')->first();
+            }
+            if ($occupancy) {
+                $occupancyId = $occupancy->room_type_tsid;
+            }
+        }
+
+        return $occupancyId;
+    }
+
+    private function buildPramForGetServicePrice($serviceId, $serviceTypeName, $startDate, $nights, $currencyCode, $optionList, $cityKey = 0)
+    {
+        if (!is_array($optionList[0])) {
+            $optionList[0] = [];
+        }
+        if (!is_array($optionList[1])) {
+            $optionList[1] = [];
+        }
+
+        return $this->getServicePrice($serviceId, $serviceTypeName, $startDate, $nights, $currencyCode, $optionList[0], $optionList[1], $cityKey);
+    }
+
+    public function reCalculateItinerarayPrices($itinerary, $data)
+    {
+
         $this->priceResponseError = array();
-        $this->priceResponseWarn  =  array();
+        $this->priceResponseWarn = array();
+        $adult = $data['itinerary']['adult'];
+        $child = $data['itinerary']['child'];
+
+        $defaultQuantity = 1;
+        //echo "<pre>";
         $price1 = 0;
         $price2 = 0;
-
-        $previousCityEndDate = $data['itinerary']['start-date'];
+        // echo json_encode($data);exit;
+        $previousCityEndDate = $data['itinerary']['startdate'];
         $currencyCode = $data['itinerary']['currency'];
-        # Internal service Id
-        $internalServicePriceList = $this->getTravelServicePrices($data['itinerary']['internalservice_id'], 'internalservice', $data['itinerary']['start-date'], 1, $currencyCode);
-        $data['itinerary']['internalservice_price'] = array_sum($internalServicePriceList);
-        $data['itinerary']['internalservice_price_list'] = implode("|", $internalServicePriceList);
 
-        $price1 = $data['itinerary']['internalservice_price'];
-        $price2 = $price1;
-        # Adjustment 
-        $price1 += $data['itinerary']['adjustment1'];
-        $price2 += $data['itinerary']['adjustment2'];
+        // otherDetails
+        if (!empty($data['itinerary']['otherDetails'])) {
 
-        $i = 0;
-        foreach ($data['city'] as $cityKey => $cityDetails) {
+            $otherDetails = $data['itinerary']['otherDetails'];
 
-            $noOfNights = $cityDetails['city']['nights'];
-            $city = $cityDetails['city'];
-            $cityOrderNumber = $i;
-
-            $cityDates = $itinerary->getDatesForAccomodationFromItenaryData($previousCityEndDate, $noOfNights, $previousCityEndDate);
-            $data['city'][$i]['city']['start-date'] = $cityDates['start-date'];
-            $data['city'][$i]['city']['end-date'] = $cityDates['end-date'];
-            $previousCityEndDate = $cityDates['end-date'];
-
-            $cityEndDate = $data['city'][$i]['city']['end-date'];
-            $cityStartDate = $data['city'][$i]['city']['start-date'];
-            # Activities  prices
-            if (!empty($cityDetails['activities'])) {
-                foreach ($cityDetails['activities']['activity_id'] as $activitiesKey => $activityID) {
-                    if (!empty($activityID)) {
-                        $fromDate = $data['city'][$i]['activities']['from_date'][$activitiesKey];
-                        $noOfNights = $data['city'][$i]['activities']['nights'][$activitiesKey];
-                        if (!$this->validateActivityDate($cityStartDate, $cityEndDate, $fromDate, $noOfNights)) {
-                            $data['city'][$i]['activities']['from_date'][$activitiesKey] = $cityStartDate;
-                            $fromDate = $cityStartDate;
-                        }
+            // echo json_encode($otherDetails);   exit;
+            # Internal service Id
+            if (!empty($otherDetails['internalService'])) {
+                foreach ($otherDetails['internalService'] as $serviceKey => $service) {
+                    if (!empty($service['internalService']['serviceOptions'])) {
+                        $adultCount = array_get($service, 'guests.adult', 0);
+                        $childCount = array_get($service, 'guests.child', 0);
+                        $occupancyIdInternalService = $this->getOccupancyIdFromPassengerCount($adultCount, $childCount);
+                        $this->travelStudioClient->setRoomDetails($occupancyIdInternalService, $defaultQuantity, $adultCount + $childCount, $childCount);
+                        $optionsList = array();
+                        $optionsList[0] = (!empty($service['internalService']['selectedServiceOptions'])) ? $service['internalService']['selectedServiceOptions'] : '';
+                        $optionsList[1] = (!empty($service['internalService']['selectedServiceExtra'])) ? $service['internalService']['selectedServiceExtra'] : '';
+                        $otherDetails['internalService'][$serviceKey]['price'] = $this->buildPramForGetServicePrice(
+                                $service['internalServicesOptions']['service_tsid'], 'internalservice', $service['startDate'], $service['nights'], $currencyCode, $optionsList
+                        );
+                        $data['internalService'][$serviceKey]['price'] = $otherDetails['internalService'][$serviceKey]['price'];
+                        $data['itinerary']['otherDetails']['internalService'][$serviceKey]['price'] = $otherDetails['internalService'][$serviceKey]['price'];
+                        $price1 += $otherDetails['internalService'][$serviceKey]['price'];
                     }
                 }
             }
-            #
-            # Guides  prices
-            if (!empty($cityDetails['guides'])) {
-                foreach ($cityDetails['guides']['activity_id'] as $activitiesKey => $activityID) {
-                    if (!empty($activityID)) {
-                        $fromDate = $data['city'][$i]['guides']['from_date'][$activitiesKey];
-                        $noOfNights = $data['city'][$i]['guides']['nights'][$activitiesKey];
-                        if (!$this->validateActivityDate($cityStartDate, $cityEndDate, $fromDate, $noOfNights)) {
-                            $data['city'][$i]['guides']['from_date'][$activitiesKey] = $cityStartDate;
-                            $fromDate = $cityStartDate;
-                        }
-                    }
+            $occupancyId = $this->getOccupancyIdFromPassengerCount($adult, $child);
+            $this->travelStudioClient->setRoomDetails($occupancyId, $defaultQuantity, $adult + $child, $child);
+            # carService
+            if (!empty($otherDetails['carService'])) {
+                foreach ($otherDetails['carService'] as $serviceKey => $service) {
+                    $optionsList = array();
+                    $optionsList[0] = (!empty($service['carOptions']['selectedServiceOptions'])) ? $service['carOptions']['selectedServiceOptions'] : '';
+                    $optionsList[1] = (!empty($service['carOptions']['selectedServiceExtra'])) ? $service['carOptions']['selectedServiceExtra'] : '';
+                    $otherDetails['carService'][$serviceKey]['price'] = $this->buildPramForGetServicePrice(
+                            $service['carserviceOptions']['service_tsid'], 'service', $service['startDate'], $service['nights'], $currencyCode, $optionsList
+                    );
+                    $data['carService'][$serviceKey]['price'] = $otherDetails['carService'][$serviceKey]['price'];
+                    $price1 += $otherDetails['carService'][$serviceKey]['price'];
                 }
             }
-            
-            $i++;
+            $tourManager = $this->getPricesForTourManager($otherDetails, $data, $price1, $currencyCode);
+            $data = $tourManager['data'];
+            $price1 = $tourManager['price'];
+            # tour Manger
         }
-        $data['itinerary']['previous-end-date'] = $previousCityEndDate;      
+        $occupancyId = $this->getOccupancyIdFromPassengerCount($adult, $child);
+        $this->travelStudioClient->setRoomDetails($occupancyId, $defaultQuantity, $adult + $child, $child);
+        $price2 = $price1;
+        //echo "<br> others = " . $price2;
+        ## Cities
+        $activitiesPrices = 0;
+        $guidesPrices = 0;
 
+        foreach ($data['city'] as $cityKey => $city) {
+
+            $cityNights = $city['nightCount'];
+            ## Date calculation 
+            $cityDates = $itinerary->getDatesForAccomodationFromItenaryData($previousCityEndDate, $cityNights, $previousCityEndDate);
+            $data['city'][$cityKey]['start-date'] = $cityDates['start-date'];
+            $data['city'][$cityKey]['end-date'] = $cityDates['end-date'];
+            $previousCityEndDate = $cityDates['end-date'];
+            ##
+
+            $cityStartDate = $data['city'][$cityKey]['start-date'];
+            $cityEndDate = $data['city'][$cityKey]['end-date'];
+
+            ## Option 1
+            if (!empty($city['optionone'])) {
+                ## Hotel 
+                $hotelPriceData = $this->calculateHotelPriceWithOptions($city, 'optionone', $data, $cityStartDate, $cityNights, $currencyCode, $cityKey, $price1);
+                $price1 = $hotelPriceData['price'];
+                $data = $hotelPriceData['data'];
+                ## Transfer
+                $transferDetailsPriceData = $this->calculateTransferDetailsPriceWithOptions($city, 'optionone', $data, $cityStartDate, $cityNights, $currencyCode, $cityKey, $occupancyId, $defaultQuantity, $adult, $child, $price1);
+                $price1 = $transferDetailsPriceData['price'];
+                $data = $transferDetailsPriceData['data'];
+            }
+            ## Option 2            
+            if (!empty($city['optiontwo'])) {
+                $hotelPriceData = $this->calculateHotelPriceWithOptions($city, 'optiontwo', $data, $cityStartDate, $cityNights, $currencyCode, $cityKey, $price2);
+                $price2 = $hotelPriceData['price'];
+                $data = $hotelPriceData['data'];
+                ## Transfer
+                $transferDetailsPriceData = $this->calculateTransferDetailsPriceWithOptions($city, 'optiontwo', $data, $cityStartDate, $cityNights, $currencyCode, $cityKey, $occupancyId, $defaultQuantity, $adult, $child, $price2);
+                $price2 = $transferDetailsPriceData['price'];
+                $data = $transferDetailsPriceData['data'];
+            }
+            $this->travelStudioClient->setRoomDetails($occupancyId, $defaultQuantity, $adult + $child, $child);
+            # Activities  prices
+            if (!empty($city['activities'])) {
+                $services = $city['activities'];
+                foreach ($services as $serviceKey => $service) {
+                    # validation against city start date
+                    if (!$this->validateActivityDate($cityStartDate, $cityEndDate, $service['startDate'], $service['nights'])) {
+                        $data['city'][$cityKey]['activities'][$serviceKey]['startDate'] = $cityStartDate;
+                        $service['startDate'] = $cityStartDate;
+                    }
+
+                    $optionsList = array($service['selectedServiceOptions'], $service['selectedServiceExtra']);
+                    $data['city'][$cityKey]['activities'][$serviceKey]['price'] = $this->buildPramForGetServicePrice(
+                            $service['activity']['activity_tsid'], 'activity', $service['startDate'], $service['nights'], $currencyCode, $optionsList, $cityKey
+                    );
+
+                    $activitiesPrices += $data['city'][$cityKey]['activities'][$serviceKey]['price'];
+                }
+            }
+            # Guides  prices
+            if (!empty($city['guides'])) {
+                $services = $city['guides'];
+                foreach ($services as $serviceKey => $service) {
+                    # validation against city start date
+                    if (!$this->validateActivityDate($cityStartDate, $cityEndDate, $service['startDate'], $service['nights'])) {
+                        $data['city'][$cityKey]['guides'][$serviceKey]['startDate'] = $cityStartDate;
+                        $service['startDate'] = $cityStartDate;
+                    }
+
+                    $optionsList = array($service['selectedServiceOptions'], $service['selectedServiceExtra']);
+                    $data['city'][$cityKey]['guides'][$serviceKey]['price'] = $this->buildPramForGetServicePrice(
+                            $service['activity']['activity_tsid'], 'activity', $service['startDate'], $service['nights'], $currencyCode, $optionsList, $cityKey
+                    );
+                    $guidesPrices += $data['city'][$cityKey]['guides'][$serviceKey]['price'];
+                }
+            }
+        }
+        ## Price
+        $data['price1'] = round($price1 + $activitiesPrices + $guidesPrices);
+        $data['price2'] = round($price2 + $activitiesPrices + $guidesPrices);
+
+        $data['price1'] = $this->generalSetting->getCustomPrice($currencyCode, $data['price1']);
+        $data['price2'] = $this->generalSetting->getCustomPrice($currencyCode, $data['price2']);
         return $data;
     }
 
-    public function reCalculateItinerarayPrices($itinerary, $data) {
-        $this->priceResponseError = array();
-        $this->priceResponseWarn  =  array();
-        $price1 = 0;
-        $price2 = 0;
-
-        $previousCityEndDate = $data['itinerary']['start-date'];
-        $currencyCode = $data['itinerary']['currency'];
-        # Internal service Id
-        $internalServicePriceList = $this->getTravelServicePrices($data['itinerary']['internalservice_id'], 'internalservice', $data['itinerary']['start-date'], 1, $currencyCode);
-        $data['itinerary']['internalservice_price'] = array_sum($internalServicePriceList);
-        $data['itinerary']['internalservice_price_list'] = implode("|", $internalServicePriceList);
-
-        $price1 = $data['itinerary']['internalservice_price'];
-        $price2 = $price1;
-        # Adjustment 
-        $price1 += $data['itinerary']['adjustment1'];
-        $price2 += $data['itinerary']['adjustment2'];
-
-        $i = 0;
-        foreach ($data['city'] as $cityKey => $cityDetails) {
-            
-            
-            $noOfNights = $cityDetails['city']['nights'];
-            $city = $cityDetails['city'];
-            $cityOrderNumber = $i;
-              
-            $cityDates = $itinerary->getDatesForAccomodationFromItenaryData($previousCityEndDate, $noOfNights, $previousCityEndDate);
-            $data['city'][$i]['city']['start-date'] = $cityDates['start-date'];
-            $data['city'][$i]['city']['end-date'] = $cityDates['end-date'];
-            $previousCityEndDate = $cityDates['end-date'];
-            $this->getTravelServicePrices($city['id'], 'city', $cityDates['start-date'], $noOfNights, $currencyCode, $cityOrderNumber,$city['id']);            
-            # Travel Service Price calculation
-            $travelServicePriceList = $this->getTravelServicePrices($city['service_id'], 'service', $cityDates['start-date'], $noOfNights, $currencyCode, $cityOrderNumber);
-            $serviceTotalPrice = array_sum($travelServicePriceList);
-            $data['city'][$i]['city']['service_total_price'] = $serviceTotalPrice;
-            $data['city'][$i]['city']['service_price'] = implode("|", $travelServicePriceList);
-            #
-            # Hotel Price calculation
-            $hotelPrice = $this->getServicePrice($city['hotel_id'], 'hotel', $cityDates['start-date'], $noOfNights, $currencyCode, $cityOrderNumber);
-            $data['city'][$i]['city']['hotel_price'] = $hotelPrice;
-            #
-            # Option 2 Travel Service Price calculation
-            $travelServicePriceList = $this->getTravelServicePrices($city['service2_id'], 'service', $cityDates['start-date'], $noOfNights, $currencyCode, $cityOrderNumber);
-            $service2TotalPrice = array_sum($travelServicePriceList);
-            $data['city'][$i]['city']['service2_total_price'] = $service2TotalPrice;
-            $data['city'][$i]['city']['service2_price'] = implode("|", $travelServicePriceList);
-            #
-            # Option 2 Hotel Price calculation
-            $hotel2Price = $this->getServicePrice($city['hotel2_id'], 'hotel', $cityDates['start-date'], $noOfNights, $currencyCode, $cityOrderNumber);
-            $data['city'][$i]['city']['hotel2_price'] = $hotel2Price;
-            #
-
-            $cityEndDate = $data['city'][$i]['city']['end-date'];
-            $cityStartDate = $data['city'][$i]['city']['start-date'];
-            # Activities  prices
-            $activitiesPrices = 0;
-            if (!empty($cityDetails['activities'])) {
-                foreach ($cityDetails['activities']['activity_id'] as $activitiesKey => $activityID) {
-                    if (!empty($activityID)) {
-                        $fromDate = $data['city'][$i]['activities']['from_date'][$activitiesKey];
-                        $noOfNights = $data['city'][$i]['activities']['nights'][$activitiesKey];
-                        if (!$this->validateActivityDate($cityStartDate, $cityEndDate, $fromDate, $noOfNights)) {
-                            $data['city'][$i]['activities']['from_date'][$activitiesKey] = $cityStartDate;
-                            $fromDate = $cityStartDate;
-                        }
-
-                        $data['city'][$i]['activities']['price'][$activitiesKey] = $this->getServicePrice($activityID, 'activity', $fromDate, $noOfNights, $currencyCode, $cityOrderNumber);
-                        $activitiesPrices += $data['city'][$i]['activities']['price'][$activitiesKey];
-                    }
-                }
-            }
-            #
-            # Guides  prices
-            $guidesPrices = 0;
-            if (!empty($cityDetails['guides'])) {
-                foreach ($cityDetails['guides']['activity_id'] as $activitiesKey => $activityID) {
-                    if (!empty($activityID)) {
-                        $fromDate = $data['city'][$i]['guides']['from_date'][$activitiesKey];
-                        $noOfNights = $data['city'][$i]['guides']['nights'][$activitiesKey];
-                        if (!$this->validateActivityDate($cityStartDate, $cityEndDate, $fromDate, $noOfNights)) {
-                            $data['city'][$i]['guides']['from_date'][$activitiesKey] = $cityStartDate;
-                            $fromDate = $cityStartDate;
-                        }
-                        $data['city'][$i]['guides']['price'][$activitiesKey] = $this->getServicePrice($activityID, 'activity', $fromDate, $noOfNights, $currencyCode, $cityOrderNumber);
-                        $guidesPrices += $data['city'][$i]['guides']['price'][$activitiesKey];
-                    }
-                }
-            }
-
-            # Price
-            $price1 += $serviceTotalPrice + $hotelPrice + $activitiesPrices + $guidesPrices;
-
-            if (!empty($city['hotel2_id'])) {
-                $price2 += $service2TotalPrice + $hotel2Price + $activitiesPrices + $guidesPrices;
-            } else {
-                $price2 += $serviceTotalPrice + $hotelPrice + $activitiesPrices + $guidesPrices;
-            }
-
-            $i++;
-        }
-        $data['itinerary']['previous-end-date'] = $previousCityEndDate;
-        $data['price1'] = $this->getAdjustablePrice($data['itinerary']['currency'], $price1);
-        $data['price2'] = $this->getAdjustablePrice($data['itinerary']['currency'], $price2);
-
-        return $data;
-    }
-
-    private function validateActivityDate($cityStartDate, $cityEndDate, $activityStartDate, $activityNights = 0) {
+    private function validateActivityDate($cityStartDate, $cityEndDate, $activityStartDate, $activityNights = 0)
+    {
         $result = false;
         if (!empty($activityStartDate)) {
             $activityEndDate = str_replace('-', '/', $activityStartDate);
@@ -267,51 +277,64 @@ class PriceCalculation {
         return $result;
     }
 
-    private function getTravelServicePrices($serviceIds, $serviceTypeName, $startDate, $noNights, $currencyCode, $cityOrderNumber = 0,$region_id =NULL) {
-
-        $travelServicePriceList = array();
-        if (!empty($serviceIds)) {
-            $travelServiceIdList = explode("|", $serviceIds);
-            foreach ($travelServiceIdList as $travelServiceIdKey => $travelServiceId) {
-                $travelServicePriceList[] = $this->getServicePriceFromTSAPI($travelServiceId, $serviceTypeName, $startDate, $noNights, $currencyCode, true,$region_id);
-                $this->setLoggedError($cityOrderNumber, $travelServiceId, $serviceTypeName);
-            }
-        }
-
-        return $travelServicePriceList;
-    }
-
-    private function getServicePrice($serviceId, $serviceTypeName, $startDate, $noNights, $currencyCode, $cityOrderNumber = 0) {
+    private function getServicePrice($serviceId, $serviceTypeName, $startDate, $noNights, $currencyCode, $selectedOptions = array(), $selectedExtras = array(), $cityOrderNumber = 0)
+    {
 
         $servicePrice = 0;
         if (!empty($serviceId)) {
-            $servicePrice = $this->getServicePriceFromTSAPI($serviceId, $serviceTypeName, $startDate, $noNights, $currencyCode, true);
+            $apiResponse = $this->getServicePriceFromTSAPI($serviceId, $serviceTypeName, $startDate, $noNights, $currencyCode);
+            $servicePrice = $this->getPriceForSeletedOptionsAndExtras($apiResponse, $selectedOptions, $selectedExtras);
             $this->setLoggedError($cityOrderNumber, $serviceId, $serviceTypeName);
         }
 
         return $servicePrice;
     }
 
-    private function getServicePriceFromTSAPI($serviceId, $serviceTypeName, $dateOnWhichServiceIsRequired = null, $nightsForWhichServiceIsRequired = null, $currencyCode = null, $serviceCheck=false,$region_id =NULL) {
-        $price = 0;
-        $this->priceResponseErrorMessage = '';
-        $this->priceResponseWarnMessage='';
-        $travelStudio = $this->travelStudioClient;
-        $travelStudio->getServicePriceAndAvailability($serviceId, $serviceTypeName, $dateOnWhichServiceIsRequired, $nightsForWhichServiceIsRequired, $currencyCode, $serviceCheck,$region_id);
+    private function getPriceForSeletedOptionsAndExtras($apiResponse, $selectedOptions, $selectedExtras)
+    {
+        $servicePrice = 0;
+        /* echo "<br>apiResponse ";
+          print_r($apiResponse);
+          echo "<br>selectedOption ";
+          print_r($selectedOptions);
+          echo "------"; */
+        if (!empty($apiResponse['serviceOptions'])) {
+            foreach ($apiResponse['serviceOptions'] as $serviceOptionKey => $serviceOption) {
 
-        if (!$travelStudio->hasError()) {
-            $price = $travelStudio->getSservicePrice();
-            if($travelStudio->getErrorType() == 'warning' ||$travelStudio->getErrorType() == 'region_warning'){
-                $this->priceResponseWarnMessage = $travelStudio->getErrorMsgs();
-            }            
-        } else {
-                $this->priceResponseErrorMessage = $travelStudio->getErrorMsgs();
+                foreach ($selectedOptions as $selectedOptionKey => $selectedOption) {
+                    if (array_has($selectedOption, 'OptionID') && array_has($serviceOption, 'OptionID')) {
+                        if ($selectedOption['OptionID'] == $serviceOption['OptionID']) {
+                            $servicePrice += $serviceOption['TotalSellingPrice'];
+                            # delete match one  for performance 
+                            unset($selectedOptions[$selectedOptionKey]);
+                            break;
+                        }
+                    }
+                }
+            }
         }
 
-        return $price;
+        if (!empty($apiResponse['serviceExtras'])) {
+            foreach ($apiResponse['serviceExtras'] as $serviceExtraKey => $serviceExtra) {
+                if (is_array($selectedExtras)) {
+                    foreach ($selectedExtras as $selectedExtraKey => $selectedExtra) {
+                        if ($selectedExtra['ServiceExtraId'] == $serviceExtra['ServiceExtraId']) {
+                            $servicePrice += $selectedExtra['TOTALPRICE'];
+                            # delete match one  for performance 
+                            unset($selectedExtras[$selectedExtraKey]);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+//        echo "<br> servicePrice $servicePrice";
+
+        return $servicePrice;
     }
 
-    function calculateOptionPricesForItineraryWithoutApiCall($itinerary) {
+    function calculateOptionPricesForItineraryWithoutApiCall($itinerary)
+    {
         $internalServicePrice = 0;
         $hotel1Price = 0;
         $hotel2Price = 0;
@@ -339,7 +362,141 @@ class PriceCalculation {
         return $totalPrice;
     }
 
-    function setLoggedError($cityId, $serviceId, $serviceType) {
+    function calculateTransferDetailsPriceWithOptions($city, $option, $data, $cityStartDate, $cityNights, $currencyCode, $cityKey, $occupancyId, $defaultQuantity, $adult, $child, $price)
+    {
+        if (!empty($city[$option]['arrivalDetail'])) {
+            $this->travelStudioClient->setRoomDetails($occupancyId, $defaultQuantity, $adult + $child, $child);
+            $services = $city[$option]['arrivalDetail'];
+            foreach ($services as $serviceKey => $service) {
+                if (isset($service['arrivalDetailsService'])) {
+                    $selectedserviceExtras = array_get($service, 'selectedserviceExtras', []);
+                    $optionsList = array(array($service['optionForService']), $selectedserviceExtras);
+                    $data['city'][$cityKey][$option]['arrivalDetail'][$serviceKey]['servicePrice'] = $this->buildPramForGetServicePrice(
+                            $service['arrivalDetailsService']['service_tsid'], 'service', $cityStartDate, $cityNights, $currencyCode, $optionsList, $cityKey
+                    );
+                    $price += $data['city'][$cityKey][$option]['arrivalDetail'][$serviceKey]['servicePrice'];
+                }
+            }
+        }
+        return ['city' => $city, 'data' => $data, 'price' => $price];
+    }
+
+    function calculateHotelPriceWithOptions($city, $option, $data, $cityStartDate, $cityNights, $currencyCode, $cityKey, $price)
+    {
+//        dump($city[$option]['hotel']['selectedhotelExtras']);
+        if (!empty($city[$option]['hotel']) && !empty($city[$option]['hotel']['selectedhotelOptions'])) {
+            $selectedhotelOptions = $city[$option]['hotel']['selectedhotelOptions'];
+            $selectedhotelExtras = $city[$option]['hotel']['selectedhotelExtras'];
+            $service = $city[$option]['hotel'];
+            $this->buildPramForGetServicePrice($service['hotel_tsid'], 'hotel', $cityStartDate, $cityNights, $currencyCode, [0 => $selectedhotelOptions, 1 => $selectedhotelExtras], $cityKey);
+            $selected = $this->getPricesForSelectedOptions($selectedhotelOptions, $selectedhotelExtras, $service['hotel_tsid'], $cityStartDate, $cityNights, $currencyCode);
+            $city[$option]['hotel']['selectedhotelOptions'] = $selected['selectedhotelOptions'];
+            $city[$option]['hotel']['selectedhotelExtras'] = $selected['selectedhotelExtras'];
+            $data['city'][$cityKey][$option]['hotel']['selectedHotelPrice'] = $selected['selectedHotelPrice'];
+            $price += $data['city'][$cityKey][$option]['hotel']['selectedHotelPrice'];
+        } else if (!empty($city[$option]['hotel']['selectedHotelPrice'])) {
+            $price += $city[$option]['hotel']['selectedHotelPrice'];
+        }
+        return ['city' => $city, 'data' => $data, 'price' => $price];
+    }
+
+    public function getPricesForSelectedOptions($selectedhotelOptions, $selectedhotelExtras, $serviceId, $dateOnWhichServiceIsRequired, $nightsForWhichServiceIsRequired, $currencyCode)
+    {
+        $travelStudio = app('TravelStudio');
+        $selectedHotelPrice = 0;
+        $dateOnWhichServiceIsRequired = $this->dateHelper->getMySqlDateFromNormalDate($dateOnWhichServiceIsRequired);
+        $endDate = $this->dateHelper->addDaysToDate($dateOnWhichServiceIsRequired, $nightsForWhichServiceIsRequired);
+        foreach ($selectedhotelOptions as $key => $selectedhotelOption) {
+            $numberOfPassengers = $selectedhotelOption['adultCount'] + $selectedhotelOption['childCount'];
+            $travelStudio->setRoomDetails($selectedhotelOption['Occupancy'], $selectedhotelOption['quantity'], $numberOfPassengers, $selectedhotelOption['childCount']);
+            $travelStudio->getServicesPricesAndAvailability($serviceId, 2, $dateOnWhichServiceIsRequired, $nightsForWhichServiceIsRequired, $currencyCode, true);
+            foreach ($travelStudio->serviceOptions as $serviceOption) {
+                if ($selectedhotelOption['OptionID'] == $serviceOption['OptionID']) {
+                    $selectedhotelOptions[$key]['TotalSellingPrice'] = $serviceOption['TotalSellingPrice'];
+                    $selectedHotelPrice+=$selectedhotelOptions[$key]['TotalSellingPrice'];
+                }
+            }
+        }
+        $selectedExtraPrice = 0;
+        foreach ($selectedhotelExtras as $iey => $selectedhotelExtra) {
+            $extras = $travelStudio->getExtrasForAService(2, $serviceId, $dateOnWhichServiceIsRequired, $endDate, $currencyCode);
+            foreach ($extras as $extra) {
+                if ($extra['ServiceExtraId'] == $selectedhotelExtra['ServiceExtraId']) {
+                    $selectedExtraPrice = $extra['TOTALPRICE'] * $selectedhotelExtra['quantity'];
+                    $selectedhotelExtras[$iey]['TOTALPRICE'] = $selectedExtraPrice;
+                    $selectedHotelPrice+=$selectedExtraPrice;
+                }
+            }
+        }
+        $return['selectedHotelPrice'] = $selectedHotelPrice;
+        $return['selectedhotelOptions'] = $selectedhotelOptions;
+        $return['selectedhotelExtras'] = $selectedhotelExtras;
+        return $return;
+    }
+
+    function getPricesForTourManager($otherDetails, $data, $price, $currencyCode)
+    {
+        $return = [];
+        if (!empty($otherDetails['tourManager'])) {
+            foreach ($otherDetails['tourManager'] as $serviceKey => $service) {
+                $optionsList = array();
+                $optionsList[0] = (!empty($service['tourOptions']['selectedServiceOptions'])) ? $service['tourOptions']['selectedServiceOptions'] : '';
+                $optionsList[1] = (!empty($service['tourOptions']['selectedServiceExtra'])) ? $service['tourOptions']['selectedServiceExtra'] : '';
+                $otherDetails['tourManager'][$serviceKey]['price'] = $this->buildPramForGetServicePrice(
+                        $service['tourServiceOptions']['service_tsid'], 'service', $service['startDate'], $service['nights'], $currencyCode, $optionsList
+                );
+                $data['tourManager'][$serviceKey]['price'] = $otherDetails['tourManager'][$serviceKey]['price'];
+                $price += $otherDetails['tourManager'][$serviceKey]['price'];
+            }
+        }
+        $return['price'] = $price;
+        $return['data'] = $data;
+        return $return;
+    }
+
+    private function getServicePriceFromTSAPI($serviceId, $serviceTypeName, $dateOnWhichServiceIsRequired = null, $nightsForWhichServiceIsRequired = null, $currencyCode = null)
+    {
+        $this->priceResponseErrorMessage = '';
+        $this->priceResponseWarnMessage = '';
+        $result = [];
+        $result['serviceOptions'] = [];
+        $result['serviceExtras'] = [];
+        $result['priceOfService'] = 0;
+
+        $limitToOneRoomType = true;
+        if ($serviceTypeName == 'hotel') {
+            $limitToOneRoomType = true;
+            $this->travelStudioClient->setRoomDetails(2, 1, 1, 0);
+        }
+        $dateOnWhichServiceIsRequired = $this->dateHelper->getMySqlDateFromNormalDate($dateOnWhichServiceIsRequired);
+        $this->travelStudioClient->getServicePriceAndAvailability($serviceId, $serviceTypeName, $dateOnWhichServiceIsRequired, $nightsForWhichServiceIsRequired, $currencyCode, $limitToOneRoomType);
+        if (!$this->travelStudioClient->hasError()) {
+            $result['serviceOptions'] = $this->travelStudioClient->serviceOptions;
+            $endDate = $this->dateHelper->addDaysToDate($dateOnWhichServiceIsRequired, $nightsForWhichServiceIsRequired);
+            $result['serviceExtras'] = $this->travelStudioClient->getExtrasForAService($this->travelStudioClient->getServiceTypeId(), $serviceId, $dateOnWhichServiceIsRequired, $endDate);
+            $result['priceOfService'] = $this->travelStudioClient->getSservicePrice();
+        }
+        $this->setResponseErrorAndWarning();
+        return $result;
+    }
+
+    function setResponseErrorAndWarning($travelStudioClient = null)
+    {
+        if (!$travelStudioClient) {
+            $travelStudioClient = $this->travelStudioClient;
+        }
+        $this->priceResponseWarnMessage = null;
+        $this->priceResponseErrorMessage = null;
+        if ($travelStudioClient->getErrorType() == 'warning' || $travelStudioClient->getErrorType() == 'region_warning') {
+            $this->priceResponseWarnMessage = $this->travelStudioClient->getErrorMsgs();
+        }
+        if ($travelStudioClient->getErrorType() == 'error') {
+            $this->priceResponseErrorMessage = $travelStudioClient->getErrorMsgs();
+        }
+    }
+
+    function setLoggedError($cityId, $serviceId, $serviceType)
+    {
         if (!empty($this->priceResponseErrorMessage) && $serviceId > 0) {
             $this->priceResponseError[$cityId][$serviceType][$serviceId][] = $this->priceResponseErrorMessage;
         }
@@ -348,13 +505,14 @@ class PriceCalculation {
         }
     }
 
-    function getLoggedError() {
+    function getLoggedError()
+    {
         return $this->priceResponseError;
-        
     }
-     function getLoggedwarning() {
+
+    function getLoggedwarning()
+    {
         return $this->priceResponseWarn;
-        
     }
-    
+
 }

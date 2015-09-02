@@ -20,7 +20,7 @@ class PriceCalculationServiceProvider extends ServiceProvider {
      */
     public function register() {
         $this->app->singleton('Compassites\PriceCalculation\PriceCalculation', function($app) {
-            return new PriceCalculation($app['TravelStudio'], $app['DateHelper']);
+            return new PriceCalculation($app['TravelStudio'], $app['DateHelper'], $app['GeneralSetting']);
         });
     }
 

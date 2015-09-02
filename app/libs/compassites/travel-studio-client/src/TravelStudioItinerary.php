@@ -3,20 +3,16 @@
 namespace Compassites\TravelStudioClient;
 
 use Compassites\DateHelper\DateHelper;
-use Compassites\TsBookingIdPoolHelper\TsBookingIdPoolHelper;
-use Compassites\EnvironmentHelper\EnvironmentHelper;
-use Compassites\ServiceRulesHelper\ServiceRulesHelper;
-class TravelStudioItinerary extends TravelStudioClientBase {
+
+class TravelStudioItinerary extends TravelStudioClientBase
+{
 
     public $bookingFee = 0;
     public $bookingFee_option_2 = 0;
     public $currency = null;
 
-    public function __construct(DateHelper $DateHelper, TsBookingIdPoolHelper $tsBookingIdPoolHelper, EnvironmentHelper $environmentHelper,ServiceRulesHelper $serviceRulesHelper) {
-        parent::__construct($DateHelper, $tsBookingIdPoolHelper, $environmentHelper,$serviceRulesHelper);
-    }
-
-    function formatted_date($data) {
+    function formatted_date($data)
+    {
         $results = '';
         if (!empty($data)) {
             $data = substr($data, 0, 10);
@@ -25,7 +21,8 @@ class TravelStudioItinerary extends TravelStudioClientBase {
         return $results;
     }
 
-    function get_duration($start_date, $end_date) {
+    function get_duration($start_date, $end_date)
+    {
         $results = 0;
         if (!empty($start_date) && !empty($end_date)) {
             $start_date = substr($start_date, 0, 10);
@@ -39,15 +36,18 @@ class TravelStudioItinerary extends TravelStudioClientBase {
         return $results;
     }
 
-    function option1FeeCalculation($amt = parseAndSaveBookingDetailsResponseForData0, $service = '') {
+    function option1FeeCalculation($amt = parseAndSaveBookingDetailsResponseForData0, $service = '')
+    {
         $this->bookingFee += $amt;
     }
 
-    function option2FeeCalculation($amt = 0, $service = '') {
+    function option2FeeCalculation($amt = 0, $service = '')
+    {
         $this->bookingFee_option_2 +=$amt;
     }
 
-    function getFormattedBookingDetails($rawResponse) {
+    function getFormattedBookingDetails($rawResponse)
+    {
         $bookingInfo = array();
         $result = array();
         $enc = $rawResponse->BookingInfoResponses->ResponseList->anyType->enc_value;
@@ -60,63 +60,42 @@ class TravelStudioItinerary extends TravelStudioClientBase {
                 'language' => $enc->SALES_ANALYSIS_1_NAME,
             );
             $bookedServiceList = $enc->BookedServices->BookedService;
-//            echo "<pre>"; print_r($bookedServiceList); echo "</pre>"; exit;
             /*
              * Service ordering based on Date 
              */
             foreach ($bookedServiceList as $key => $bookedService) {
                 $region = \Region::where('region_tsid', '=', $bookedService->RegionID)->first();
 
-                $amt = 0;
-                $serviceFromDate = '';
-                $serviceEndDate = '';
                 if (is_array($bookedService->BookedOptions->BookedOption)) {
+                    $amt = 0;
                     foreach ($bookedService->BookedOptions->BookedOption as $key => $bookedOptionList) {
                         $amt += $bookedOptionList->Amount;
-                        
-                        if(empty($serviceFromDate) || $serviceFromDate > $bookedOptionList->FromDate ){
-                            $serviceFromDate = $bookedOptionList->FromDate;
-                        }
-                        if(empty($serviceEndDate) || $serviceEndDate < $bookedOptionList->ToDate ){
-                            $serviceEndDate = $bookedOptionList->ToDate;
-                        }
                     }
                     $bookedService->BookedOptions->BookedOption = $bookedService->BookedOptions->BookedOption[0];
                 } else {
                     $amt = $bookedService->BookedOptions->BookedOption->Amount;
-                    $serviceFromDate = $bookedService->BookedOptions->BookedOption->FromDate;
-                    $serviceEndDate = $bookedService->BookedOptions->BookedOption->ToDate;
 //                    $bookedService->BookedOptions->BookedOption = $bookedService->BookedOptions->BookedOption;
                 }
-//                if (empty($region->region_parent_id) ) {
-//                $this->option1FeeCalculation($amt, $bookedService->ServiceName);
-//                $this->option2FeeCalculation($amt, $bookedService->ServiceName);
+//                if (empty($region->region_parent_id) || $bookedService->ServiceTypeName == 'Guide' || !isset($bookedService->BookedOptions->BookedOption->ItineraryDaysArray)) {
+                $this->option1FeeCalculation($amt, $bookedService->ServiceName);
+                $this->option2FeeCalculation($amt, $bookedService->ServiceName);
 //                    continue;
 //                }
-                
-                if (!$region) {
-                    echo "<pre>"; 
-                    //print_r($bookedService); 
-                    echo "Location not available in TravelBuilder Database - ID : " . $bookedService->RegionID;
-                    echo "</pre>"; exit;
-                }
-
 
                 if ($bookedService->ServiceTypeName != 'Accommodation') {
                     $this->option1FeeCalculation($amt, $bookedService->ServiceName);
                     $this->option2FeeCalculation($amt, $bookedService->ServiceName);
                 }
-                    
+
                 $details = array('RegionID' => $bookedService->RegionID,
-                    'RegionParentId' => (int) $region->region_parent_id,
                     'RegionName' => $region->region_name,
                     'ServiceTypeName' => $bookedService->ServiceTypeName,
                     'ServiceID' => $bookedService->ServiceID,
                     'ServiceTypeID' => $bookedService->ServiceTypeID,
                     'ServiceName' => $bookedService->ServiceName,
                     'BookedServiceID' => $bookedService->BookedServiceID,
-                    'FromDate' => $serviceFromDate,
-                    'ToDate' => $serviceEndDate,
+                    'FromDate' => $bookedService->BookedOptions->BookedOption->FromDate,
+                    'ToDate' => $bookedService->BookedOptions->BookedOption->ToDate,
                     'CurrencyISOCode' => $bookedService->BookedOptions->BookedOption->CurrencyISOCode,
                     'CostAmount' => $amt,
                 );
@@ -145,28 +124,30 @@ class TravelStudioItinerary extends TravelStudioClientBase {
                 $resultOrderByDayList = array_merge($resultOrderByDayList_reorder, $resultOrderByDayList);
 
                 foreach ($resultOrderByDayList as $key => $resultOrderByDayDetail) {
-                    if (!empty($previousRegionID) && !empty($resultOrderByDayDetail['RegionParentId']) && $previousRegionID != $resultOrderByDayDetail['RegionID'] && $j > 0) {
+                    if ($previousRegionID != $resultOrderByDayDetail['RegionID'] && $j > 0) {
                         $i++;
                     }
                     $result[$i][] = $resultOrderByDayDetail;
-                    $previousRegionID = (!empty($resultOrderByDayDetail['RegionParentId'])) ?
-                            $resultOrderByDayDetail['RegionID'] : $previousRegionID;
+                    $previousRegionID = $resultOrderByDayDetail['RegionID'];
                     $j++;
                 }
             }
         }
-        return array('bookingInfo' => $bookingInfo, 'services' => array_values($result));
+        return array('bookingInfo' => $bookingInfo, 'services' => $result);
     }
 
-    function getPostData($name = '', $type = 'city') {
+    function getPostData($name = '', $type = 'city')
+    {
         return $name;
     }
 
-    function getPostDataByServiceID($serviceId = '', $type = 'city') {
+    function getPostDataByServiceID($serviceId = '', $type = 'city')
+    {
         return $serviceId;
     }
 
-    function build_service_list($param = array()) {
+    function build_service_list($param = array())
+    {
         $hotel_option_1_amt = 0;
         $hotel_option_2_amt = 0;
         $number_of_nights = 0;
@@ -231,7 +212,8 @@ class TravelStudioItinerary extends TravelStudioClientBase {
         return $result;
     }
 
-    function api_itinerary_creation($bookingId) {
+    function api_itinerary_creation($bookingId)
+    {
         $activities = '';
         if (isset($bookingId) && !empty($bookingId)) {
             $soapReponse = $this->getBookingDetails($bookingId);
@@ -281,19 +263,14 @@ class TravelStudioItinerary extends TravelStudioClientBase {
         return $value;
     }
 
-    function saveBookingInDb($services, $itinerary) {
+    function saveBookingInDb($services, $itinerary)
+    {
         $itineraryCity = new \ItineraryCity();
         $itineraryActivity = new \ItineraryActivity();
         $itenararyInternalService = new \ItenararyInternalService();
         foreach ($services as $regionServices) {
-            $regionObj = null;  
-            $RegionID = 0;
-            for ($i=count($regionServices) - 1; $i>=0 ; $i--) {  
-                if(!empty($regionServices[$i]['RegionParentId'])){
-                    $RegionID = $regionServices[$i]['RegionID'];
-                    break;
-                }
-            }
+            $regionObj = null;
+            $RegionID = $regionServices[0]['RegionID'];
             if ($RegionID > 0) {
                 $regionObj = \Region::where("region_tsid", "=", $RegionID)->first();
                 if ($regionObj) {
@@ -315,10 +292,8 @@ class TravelStudioItinerary extends TravelStudioClientBase {
                 $toDate = $this->dateHelper->removeTimeFromTMDate($regionService["ToDate"]);
                 $nights = $this->dateHelper->dateDifferenceInDays($fromDate, $toDate);
                 $serviceTypeID = $regionService["ServiceTypeID"];
-                if($RegionID == $regionService["RegionID"]){
                 array_push($date_list, $fromDate);
                 array_push($date_list, $toDate);
-                }
                 $option_type = 1;
 
                 if ($serviceTypeID == 2) {
@@ -332,7 +307,7 @@ class TravelStudioItinerary extends TravelStudioClientBase {
                 } elseif ($serviceTypeID == 3 || $serviceTypeID == 5) {
                     $activityObj = \Activity::where("activity_tsid", "=", $service_tsid)->first();
                     if ($activityObj) {
-                        $itineraryActivities[] = $itineraryActivity->prepareItinararyActivity($activityObj, 0, 0, $fromDate, $toDate, $nights+1, $service_price);
+                        $itineraryActivities[] = $itineraryActivity->prepareItinararyActivity($activityObj, 0, 0, $fromDate, $toDate, $nights, $service_price);
                     }
                 } elseif ($serviceTypeID == 20) {
                     $internalServiceObj = \InternalService::where("service_tsid", "=", $service_tsid)->first();
@@ -385,84 +360,9 @@ class TravelStudioItinerary extends TravelStudioClientBase {
                     $itineraryCityObj->hotel1()->associate($hotel2Obj);
                 }
             }
-
             $itineraryCityObj->save();
         }
         return $itinerary;
-    }
-
-    function assignServicesToTheirRespectiveCity($cityServices) {
-        $newCityServices = array();
-        if (!empty($cityServices)) {
-            $serviceCount = count($cityServices);
-            for ($cityIndex = 0; $cityIndex < $serviceCount - 1; $cityIndex++) {
-                $city = $cityServices[$cityIndex];
-                $nextCityIndex = $cityIndex + 1;
-                $newCityServices[$nextCityIndex] = array();
-                $arrivalDetailsTypeArray = array(4, 6, 8, 9, 12, 13, 14, 21);
-                foreach ($city as $serviceIndex => $service) {
-                    $serviceTypeID = $service['ServiceTypeID'];
-                    if (in_array($serviceTypeID, $arrivalDetailsTypeArray)) {
-                        $newCityServices[$nextCityIndex][] = $service;
-                    } else {
-                        $newCityServices[$cityIndex][] = $service;
-                    }
-                }
-                
-            }
-//            echo "<pre>"; print_r($newCityServices); echo "<br/>** $nextCityIndex **<br/>"; print_r($cityServices); echo "</pre>"; exit;
-            $newCityServices[$nextCityIndex] = array_merge($newCityServices[$nextCityIndex],$cityServices[$nextCityIndex]);
-             
-        }
-        ksort($newCityServices);
-        
-        return $newCityServices;
-    }
-
-    function mergeCitiesRepeatingSequentially($reParsedServicesCities) {
-        $previousRegionID = null;
-        $cityToBeMergedToIndex = null;
-        foreach ($reParsedServicesCities as $cityIndex => $cityServcies) {
-            $RegionID = $cityServcies[0]['RegionID'];
-            if ($previousRegionID != $RegionID) {
-                $previousRegionID = $RegionID;
-                $cityToBeMergedToIndex = $cityIndex;
-            } else {
-                $reParsedServicesCities[$cityToBeMergedToIndex] = array_merge($reParsedServicesCities[$cityToBeMergedToIndex], $reParsedServicesCities[$cityIndex]);
-                unset($reParsedServicesCities[$cityIndex]);
-            }
-        }
-        return array_values($reParsedServicesCities);
-    }
-
-    function removeCityNotAssignHotel($cityServices) {
-
-        $result = array();
-        
-        if(!empty($cityServices)){
-            $serviceCount = count($cityServices);
-
-            for ($i = 1; $i < $serviceCount; $i++) {
-                $serviceList = $cityServices[$i-1];
-                # Checking Accommodation
-                $accommodationCheck = 0;
-                foreach ($serviceList as $serviceKey => $services) {
-                    if ($services['ServiceTypeID'] == 2) {
-                         $accommodationCheck = 1;
-                    }
-                }
-                # End
-                # Remove the city list if not exit previous city 
-                if ($accommodationCheck == 0) {
-                    $cityServices[$i] = array_merge($cityServices[$i -1], $cityServices[$i]);
-                    unset($cityServices[$i - 1]);
-                }
-                # End
-            }
-            $result = array_values($cityServices);
-        }
-        
-        return $result;
     }
 
 }
