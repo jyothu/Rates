@@ -3,9 +3,6 @@
 namespace Compassites\TravelStudioClient;
 
 use Compassites\DateHelper\DateHelper;
-use Compassites\TsBookingIdPoolHelper\TsBookingIdPoolHelper;
-use Compassites\EnvironmentHelper\EnvironmentHelper;
-use Compassites\ServiceRulesHelper\ServiceRulesHelper;
 
 /*
  * To change this license header, choose License Headers in Project Properties.
@@ -23,8 +20,8 @@ class TravelStudioClientBase
 
     protected $serviceTypeId = '2';
     protected $serviceId;
-    protected $dateOnWhichServiceIsRequired = '2015-03-01';
-    protected $dateOnWhichServiceEnds = '2015-03-01';
+    protected $dateOnWhichServiceIsRequired = '2015-05-01';
+    protected $dateOnWhichServiceEnds = '2015-05-01';
     protected $nightsForWhichServiceIsRequired = '1';
     protected $currencyCode = "EUR";
     protected $responseIsSuccessfull = false;
@@ -32,62 +29,120 @@ class TravelStudioClientBase
     protected $isServiceAvailable = false;
     protected $servicePrice = 0;
     protected $roomOccupancy = 2;
-    protected $licenseKey = 'AC2FAAA-62D7-4A1B-9AB5-C6BF801E7803';
-    protected $tsApiUrl = 'http://52.74.9.44/B2CWS/B2CXMLAPIWebService.asmx?WSDL';
+    protected $licenseKey = 'A6C2FAAA-62D7-4A1B-9AB5-C6BF801E7803';
     protected $response;
-    private $optionId = 0;
-    private $arrivalDetailsTypeArray = array(4, 6, 8, 9, 12, 13, 14, 21);
-    private $allowServiceTypeForExtra =array(3, 20, 24);
-    protected $responseErrorType ='';
+    protected $numberOfPassengers = 2;
+    protected $numberOfChildren = 0;
+    protected $quantity = 1;
+    protected $validRoomTypesForTheHotel = array();
+    protected $selectedRoomTypesForTheHotel = array();
+    protected $findPriceForSelectedRoomTypes = false;
+    public $requestArray = array();
+    public $serviceOptions;
+    public $parsedResponse;
+    protected $client;
+    public $defaultServiceOption = [];
+    private $shouldLogPriceRequest = false;
+    private $shouldLogExtrasRequest = false;
+    protected $responseErrorType = '';
+    public $hardStop = false;
+    public $softStop = false;
+    protected $isServiceNotFound = false;
     protected $incrementForPreviousYearServicePrice = 1.05;
-
-    public function __construct(DateHelper $DateHelper, TsBookingIdPoolHelper $tsBookingIdPoolHelper, EnvironmentHelper $environmentHelper,ServiceRulesHelper $serviceRulesHelper)
-    {
-        $this->dateHelper = $DateHelper;
-        $this->dateHelper = $DateHelper;
-        $this->serviceRulesHelper = $serviceRulesHelper;
-        $this->tsBookingIdPoolHelper = $tsBookingIdPoolHelper;
-        if ($environmentHelper->hasEnvironment()) {
-            $this->licenseKey = $environmentHelper->tsLicenseKey;
-            $this->tsApiUrl = $environmentHelper->tsApiEndpoint;
-        }
-        $this->client = $this->getSoapClient();
-    }
+    protected $perDayServcieOptionsArray = [];
 
     function getSoapClient()
     {
         $params = array(
             "soap_version" => SOAP_1_2,
             "trace" => 1,
-            "exceptions" => 0,
-            'content-type' => 'text/xml; charset=utf-8'
+            "exceptions" => 1,
         );
-        $client = new \SoapClient($this->tsApiUrl, $params);
+        $client = new \SoapClient('http://172.30.1.227/B2CWS/B2CXMLAPIWebService.asmx?WSDL', $params);
         return $client;
     }
 
-    function getServicesPricesAndAvailability($serviceId, $serviceTypeId, $dateOnWhichServiceIsRequired, $nightsForWhichServiceIsRequired, $currencyCode, $serviceCheck = false,$region_id=null)
+    function getDefaultServiceOption($serviceOptions, $occupancy = null)
     {
-        $this->responseErrorMsgs= [];
+        $leastPricedOption = [];
+        $noOptionForGivenOccupancy = true;
+        if (count($serviceOptions) > 0) {
+            $leastPricedOption = $serviceOptions[0];
+            $leastPrice = $serviceOptions[0]['TotalSellingPrice'];
+            foreach ($serviceOptions as $serviceOption) {
+                if ($occupancy == $serviceOption['Occupancy']) {
+                    if ($leastPrice > $serviceOption['TotalSellingPrice']) {
+                        $leastPrice = $serviceOption['TotalSellingPrice'];
+                        $leastPricedOption = $serviceOption;
+                        $noOptionForGivenOccupancy = false;
+                    }
+                }
+            }
+            if ($noOptionForGivenOccupancy) {
+                if ($leastPrice > $serviceOption['TotalSellingPrice']) {
+                    $leastPrice = $serviceOption['TotalSellingPrice'];
+                    $leastPricedOption = $serviceOption;
+                }
+            }
+        }
+        return $leastPricedOption;
+    }
+
+    function getServicesPricesAndAvailability($serviceId, $serviceTypeId, $dateOnWhichServiceIsRequired, $nightsForWhichServiceIsRequired, $currencyCode, $limitToOneRoomType = false, $serviceCheck = true, $region_id = null)
+    {
+        $this->responseErrorMsgs = [];
         $this->responseErrorType = [];
-        $HOTEL_MEAL_PLAN_REQUIRED = 0;
-         if (!$dateOnWhichServiceIsRequired) {
+        $this->serviceOptions = [];
+        $this->defaultServiceOption = [];
+        return $this->checkAvailabilityAndCalculateDayWisePriceForService($serviceId, $serviceTypeId, $dateOnWhichServiceIsRequired, $nightsForWhichServiceIsRequired, $currencyCode, $serviceCheck, $region_id, $limitToOneRoomType);
+    }
+
+    public function getSingleServicePriceAndAvailability($serviceId, $serviceTypeId, $dateOnWhichServiceIsRequired, $nightsForWhichServiceIsRequired, $currencyCode, $limitToOneRoomType = false)
+    {
+
+        if (count($this->responseErrorMsgs) > 0 && $this->responseErrorType == 'error') {
+            $this->hardStop = true;
+//            return 0;
+        } elseif (count($this->responseErrorMsgs) > 0 && $this->responseErrorType) {
+            $this->softStop = true;
+        }
+        if (!$dateOnWhichServiceIsRequired) {
             $dateOnWhichServiceIsRequired = $this->dateOnWhichServiceIsRequired;
         }
-        if (!isset($nightsForWhichServiceIsRequired)) {
+        if (!$nightsForWhichServiceIsRequired) {
             $nightsForWhichServiceIsRequired = $this->nightsForWhichServiceIsRequired;
         }
         $RETURN_ONLY_NON_ACCOM_SERVICES = true;
         if ($serviceTypeId == 2) {
             $RETURN_ONLY_NON_ACCOM_SERVICES = false;
-            $HOTEL_MEAL_PLAN_REQUIRED = 1;
+        }
+        if ($serviceTypeId == 2 && $this->findPriceForSelectedRoomTypes) {
+            $reqAppend = $this->prepareRequestSeletedRoomTypes();
+        } else {
+            if ($limitToOneRoomType || $serviceTypeId != 2) {
+                $reqAppend['IncomingRequest']['ROOMS_REQUIRED']['ROOM']['OCCUPANCY'] = $this->roomOccupancy;
+                $reqAppend['IncomingRequest']['ROOMS_REQUIRED']['ROOM']['QUANTITY'] = $this->quantity;
+                $reqAppend['IncomingRequest']['ROOMS_REQUIRED']['ROOM']['NO_OF_PASSENGERS'] = $this->numberOfPassengers;
+                $reqAppend['IncomingRequest']['ROOMS_REQUIRED']['ROOM']['CHILDREN']['CHILD_RATE']['CHILD_QUANTITY'] = $this->numberOfChildren;
+                $reqAppend['IncomingRequest']['ROOMS_REQUIRED']['ROOM']['CHILDREN']['CHILD_RATE']['CHILD_AGE'] = '5';
+            } else {
+                $reqAppend = $this->prepareRequestWithAllRoomTypes($this->quantity);
+            }
+        }
+        if (!$currencyCode) {
+            $currencyCode = $this->currencyCode;
+        } else {
+            $this->currencyCode = $currencyCode;
+        }
+        $req['IncomingRequest'] = array();
+        if (count($reqAppend) > 0) {
+            $req = array_merge($req, $reqAppend);
         }
 
-        $req['IncomingRequest'] = array();
         $req['IncomingRequest']['VERSION_HISTORY']['LANGUAGE'] = 'en-GB';
         $req['IncomingRequest']['VERSION_HISTORY']['LICENCE_KEY'] = $this->licenseKey;
 
-        $req['IncomingRequest']['ISMEALPLANSREQUIRED'] = $HOTEL_MEAL_PLAN_REQUIRED;
+        $req['IncomingRequest']['ISMEALPLANSREQUIRED'] = 0;
         $req['IncomingRequest']['IMAGENOTREQUIRED'] = 1;
         $req['IncomingRequest']['ReturnMatchCode'] = 'true';
         $req['IncomingRequest']['SEARCHWITHFACILITIES_OPTIONS'] = 'ALL';
@@ -101,14 +156,10 @@ class TravelStudioClientBase
         $req['IncomingRequest']['SERVICETYPEID'] = $serviceTypeId;
 
         $req['IncomingRequest']['RETURN_ONLY_NON_ACCOM_SERVICES'] = $RETURN_ONLY_NON_ACCOM_SERVICES;
-        $req['IncomingRequest']['ROOM_REPLY']['ALL_ROOM'] = true;
+        $req['IncomingRequest']['ROOM_REPLY']['ANY_ROOM'] = 'true';
 
         $req['IncomingRequest']['DoNotReturnNonRefundable'] = false;
         $req['IncomingRequest']['DoNotReturnWithCancellationPenalty'] = false;
-
-        $req['IncomingRequest']['ROOMS_REQUIRED']['ROOM']['OCCUPANCY'] = $this->roomOccupancy;
-        $req['IncomingRequest']['ROOMS_REQUIRED']['ROOM']['QUANTITY'] = 1;
-        $req['IncomingRequest']['ROOMS_REQUIRED']['ROOM']['NO_OF_PASSENGERS'] = 2;
 
         $req['IncomingRequest']['BESTSELLER'] = false;
 
@@ -134,21 +185,23 @@ class TravelStudioClientBase
         $req['IncomingRequest']['ReturnAttachedOptionExtra'] = false;
         $req['IncomingRequest']['SERVICESEARCHTYPE'] = 'ENHANCED';
         $req['IncomingRequest']['ReturnAppliedOptionChargingPolicyDetails'] = false;
+        $this->requestArray = $req;
         try {
             $result = $this->client->GetServicesPricesAndAvailability($req);
+            $this->respose = $result;
+            if ($this->shouldLogPriceRequest ) {               
+                \Illuminate\Support\Facades\File::put(public_path() . "/../last_request.xml", $this->client->__getLastRequest());              
+            }
         } catch (Exception $exc) {
-
             $this->responseErrorMsgs[] = $exc->getTraceAsString();
         }
         if (!$this->parseServicesPricesAndAvailabilityResponseForError($result)) {
-
-            $this->parseServicesPricesAndAvailabilityResponseForData($result);
-            /* Diabling the check service availability feature all across
-             * if ($serviceCheck) {
-                if (!in_array($serviceTypeId, $this->arrivalDetailsTypeArray)) $this->checkServiceAvailability($serviceId, $serviceTypeId, $dateOnWhichServiceIsRequired, $nightsForWhichServiceIsRequired, $currencyCode);
-            }*/
-            $this->getServiceExtraPrices($serviceId, $serviceTypeId, $dateOnWhichServiceIsRequired, $nightsForWhichServiceIsRequired, $currencyCode);
-            return $this->servicePrice;
+            $this->serviceOptions = $this->getOptionsForService($result);
+            $this->defaultServiceOption = $this->getDefaultServiceOption($this->serviceOptions, 2);
+            return $this->parseServicesPricesAndAvailabilityResponseForData($result);
+        } else {
+            $this->softStop = false;
+            $this->hardStop = true;
         }
     }
 
@@ -159,7 +212,9 @@ class TravelStudioClientBase
         if ($hasErrorKeyCount || !$hasServicePriceAndAvailabilityKey) {
             $errorMsgs = array();
             foreach ($response->GetServicesPricesAndAvailabilityResult->Errors as $error) {
-                $errorMsgs[] = $error->Description;
+                if (property_exists($error, 'Description')) {
+                    $errorMsgs[] = $error->Description;
+                }
             }
             if (!$hasServicePriceAndAvailabilityKey) {
                 $errorMsgs[] = "Bad response";
@@ -169,6 +224,11 @@ class TravelStudioClientBase
             $this->responseIsSuccessfull = false;
         } else {
             $this->responseIsSuccessfull = true;
+        }
+        if ($this->hasError() && (trim($this->responseErrorMsgs[0]) == 'Service Not Found')) {
+            $this->isServiceNotFound = true;
+        } else {
+            $this->isServiceNotFound = false;
         }
         return !$this->responseIsSuccessfull;
     }
@@ -226,7 +286,7 @@ class TravelStudioClientBase
         $itinerary = new \Itinerary();
         $start_date = $this->dateHelper->removeTimeFromTMDate($parsedRes->BookingStartDate);
         $end_date = $this->dateHelper->removeTimeFromTMDate($parsedRes->BookingEndDate);
-        $currency = $this->currencyCode;
+        $currency = $parsedRes->CurrencyISOcode;
         $created_by = $parsedRes->SECONDARY_SYSTEM_USER_NAME;
         $itinerary_name = $parsedRes->BookingReference;
         $number_of_nights = $this->dateHelper->dateDifferenceInDays($end_date, $start_date);
@@ -244,56 +304,28 @@ class TravelStudioClientBase
     function parseServicesPricesAndAvailabilityResponseForData($response)
     {
         $this->servicePrice = 0;
-        $this->totalBuyingPrice = 0;
-        $this->hotelDefaultOPtions = null;
         if (true || $this->isServiceAvailable()) {
             $priceArray = $response->GetServicesPricesAndAvailabilityResult->Services->PriceAndAvailabilityService->ServiceOptions->PriceAndAvailabilityResponseServiceOption;
             if (is_array($priceArray)) {
                 $servicePrice = $priceArray[0]->TotalSellingPrice;
-                $totalBuyingPrice = $priceArray[0]->TotalBuyingPrice;
-                $hotelDefaultOPtions = $priceArray[0];
-                $this->optionId = $priceArray[0]->OptionID;
                 foreach ($priceArray as $price) {
                     if ($price->TotalSellingPrice < $servicePrice) {
                         $servicePrice = $price->TotalSellingPrice;
-                        $totalBuyingPrice = $price->TotalBuyingPrice;
-                        $this->optionId = $price->OptionID;
-                        $hotelDefaultOPtions = $price;
                     }
                 }
             } else {
                 $servicePrice = $priceArray->TotalSellingPrice;
-                $this->optionId = $priceArray->OptionID;
-                $totalBuyingPrice = $priceArray->TotalBuyingPrice;
-                $hotelDefaultOPtions = $priceArray;
             }
-            $this->servicePrice     = $servicePrice;
-            $this->totalBuyingPrice = $totalBuyingPrice;
-            $this->hotelDefaultOPtions = $hotelDefaultOPtions;
+            $this->servicePrice = $servicePrice;
         } else {
             $this->responseErrorMsgs = ["Service not available for the date"];
         }
-
         return $this->servicePrice;
     }
 
     function getSservicePrice()
     {
         return $this->servicePrice;
-    }
-    function gettotalBuyingPrice()
-    {
-        return $this->totalBuyingPrice;
-    }
-
-    function gethotelDefaultOPtions()
-    {
-        return $this->hotelDefaultOPtions;
-    }
-
-     function getErrorType()
-    {
-        return $this->responseErrorType;
     }
 
     function hasError()
@@ -377,97 +409,265 @@ class TravelStudioClientBase
         }
     }
 
-    function getServiceExtraPrices($serviceId, $serviceTypeId, $dateOnWhichServiceIsRequired, $nightsForWhichServiceIsRequired, $currencyCode)
+    public function getOptionsForService($response)
     {
-        $this->servicePrice;
+        $serviceOptions = array();
+        $this->hasValidServiceOption = count($response->GetServicesPricesAndAvailabilityResult->Services->PriceAndAvailabilityService->ServiceOptions->PriceAndAvailabilityResponseServiceOption) > 0;
+        $PriceAndAvailabilityResponseServiceOptions = $response->GetServicesPricesAndAvailabilityResult->Services->PriceAndAvailabilityService->ServiceOptions->PriceAndAvailabilityResponseServiceOption;
+        if (is_object($PriceAndAvailabilityResponseServiceOptions)) {
+            $serviceOptions[] = $this->prepareDataForServcieOption($PriceAndAvailabilityResponseServiceOptions);
+        } elseif (is_array($PriceAndAvailabilityResponseServiceOptions)) {
+            foreach ($PriceAndAvailabilityResponseServiceOptions as $PriceAndAvailabilityResponseServiceOption) {
+                $serviceOptions[] = $this->prepareDataForServcieOption($PriceAndAvailabilityResponseServiceOption);
+            }
+        }
+        return $serviceOptions;
+    }
 
-        if ( in_array($serviceTypeId, $this->allowServiceTypeForExtra)) {
-            $req['IncomingRequest']['Authenticate'] = array(
-                'LICENSEKEY' => $this->licenseKey,
-                'PASSENGERID' => 0,
-                'Connector' => 'enmTSHotelAPI'
-            );
+    function prepareDataForServcieOption($PriceAndAvailabilityResponseServiceOption)
+    {
+        $serviceOption = array();
+        $serviceOption['ServiceOptionName'] = $PriceAndAvailabilityResponseServiceOption->ServiceOptionName;
+        $serviceOption['TotalSellingPrice'] = $PriceAndAvailabilityResponseServiceOption->TotalSellingPrice;
+        $serviceOption['OptionID'] = $PriceAndAvailabilityResponseServiceOption->OptionID;
+        $serviceOption["MaxAdult"] = $PriceAndAvailabilityResponseServiceOption->MaxAdult;
+        $serviceOption["MaxChild"] = $PriceAndAvailabilityResponseServiceOption->MaxChild;
+        $serviceOption["Occupancy"] = $PriceAndAvailabilityResponseServiceOption->Occupancy;
+        if ($this->findPriceForSelectedRoomTypes) {
+            foreach ($this->selectedRoomTypesForTheHotel as $selectedRoomTypesForTheHotel) {
+                if ($selectedRoomTypesForTheHotel && ($selectedRoomTypesForTheHotel->OptionID == $serviceOption['OptionID'])) {
+                    $serviceOption["quantity"] = $selectedRoomTypesForTheHotel->quantity;
+                    $serviceOption["adultCount"] = $selectedRoomTypesForTheHotel->adultCount;
+                    $serviceOption["childCount"] = $selectedRoomTypesForTheHotel->childCount;
+                }
+            }
+        } else {
+            $serviceOption["quantity"] = 0;
+            $serviceOption["adultCount"] = 0;
+            $serviceOption["childCount"] = 0;
+        }
+        return $serviceOption;
+    }
 
-            $currentMySqlStartDate = $this->dateHelper->getMySqlDateFromNormalDate($dateOnWhichServiceIsRequired);
+    public function setNumberOfPassengers($numberOfPassengers, $childCount = 0)
+    {
+        if ($numberOfPassengers > 0) {
+            $this->numberOfPassengers = $numberOfPassengers;
+        }
+        if ($childCount > 0) {
+            $this->numberOfChildren = $childCount;
+        }
+    }
 
-            $currentMySqlEndDate = $this->dateHelper->addDaysToDate($currentMySqlStartDate, $nightsForWhichServiceIsRequired);
+    public function setQuantity($quantity)
+    {
+        if ($quantity > 0) {
+            $this->quantity = $quantity;
+        }
+    }
 
-            $req['IncomingRequest']['BOOKING_TYPE_ID'] = 0;
-            $req['IncomingRequest']['PRICE_TYPE_ID'] = 0;
+    function setRoomDetails($room_type_tsid, $quantity, $numberOfPassengers, $childCount)
+    {
+        $this->setQuantity($quantity);
+        $this->setNumberOfPassengers($numberOfPassengers, $childCount);
+        $this->setRoomType($room_type_tsid);
+    }
+
+    function getApiRequest()
+    {
+        return $this->client->__getLastRequest();
+    }
+
+    function getAllRoomTypes()
+    {
+        $req = array();
+        $req['objRoomTypeRequest']['Authenticate'] = array('LICENSEKEY' => $this->licenseKey, 'PASSENGERID' => 0, 'Connector' => 'enmTS');
+        $resp = $this->client->getRoomTypes($req);
+        return $resp->RoomTypeResponse->RoomTypes->RoomType;
+    }
+
+    function prepareRequestWithAllRoomTypes($quantity = 1)
+    {
+        $req = array();
+        foreach ($this->validRoomTypesForTheHotel as $i => $roomType) {
+            $req['IncomingRequest']['ROOMS_REQUIRED']['ROOM'][$i]['OCCUPANCY'] = $roomType->room_type_tsid;
+            $req['IncomingRequest']['ROOMS_REQUIRED']['ROOM'][$i]['QUANTITY'] = 1;
+            $req['IncomingRequest']['ROOMS_REQUIRED']['ROOM'][$i]['NO_OF_PASSENGERS'] = $roomType->max_adult + $roomType->max_children;
+            $req['IncomingRequest']['ROOMS_REQUIRED']['ROOM'][$i]['CHILDREN']['CHILD_RATE']['CHILD_QUANTITY'] = $roomType->max_children;
+            $req['IncomingRequest']['ROOMS_REQUIRED']['ROOM'][$i]['CHILDREN']['CHILD_RATE']['CHILD_AGE'] = '5';
+        }
+        return $req;
+    }
+
+    function prepareRequestSeletedRoomTypes()
+    {
+        $req = array();
+        foreach ($this->selectedRoomTypesForTheHotel as $i => $roomType) {
+            if ($roomType && ((int) ($roomType->Occupancy) > 0)) {
+                $req['IncomingRequest']['ROOMS_REQUIRED']['ROOM'][$i]['OCCUPANCY'] = $roomType->Occupancy;
+                $req['IncomingRequest']['ROOMS_REQUIRED']['ROOM'][$i]['QUANTITY'] = $roomType->quantity;
+                $req['IncomingRequest']['ROOMS_REQUIRED']['ROOM'][$i]['NO_OF_PASSENGERS'] = $roomType->adultCount + $roomType->childCount;
+                $req['IncomingRequest']['ROOMS_REQUIRED']['ROOM'][$i]['CHILDREN']['CHILD_RATE']['CHILD_QUANTITY'] = $roomType->childCount;
+                $req['IncomingRequest']['ROOMS_REQUIRED']['ROOM'][$i]['CHILDREN']['CHILD_RATE']['CHILD_AGE'] = '5';
+            }
+        }
+        return $req;
+    }
+
+    public function setSelectedRoomTypesForTheHotel($selectedRoomTypesForTheHotel)
+    {
+        $this->findPriceForSelectedRoomTypes = true;
+        $this->selectedRoomTypesForTheHotel = $selectedRoomTypesForTheHotel;
+    }
+
+    public function setRoomType($room_type_tsid)
+    {
+        if ($room_type_tsid > 0) {
+            $this->roomOccupancy = $room_type_tsid;
+        }
+        $this->validRoomTypesForTheHotel = array();
+    }
+
+    public function setValidRoomTypesForTheHotel($validRoomTypesForTheHotel, $dontResetSelected = false)
+    {
+        $this->findPriceForSelectedRoomTypes = false;
+        if (count($validRoomTypesForTheHotel) > 0) {
+            $this->validRoomTypesForTheHotel = $validRoomTypesForTheHotel;
+        }
+        if (!$dontResetSelected) {
+            $this->selectedRoomTypesForTheHotel = array();
+        }
+    }
+
+    public function getValidRoomTypesForTheHotel()
+    {
+        return $this->validRoomTypesForTheHotel;
+    }
+
+    public function getExtrasForAService($servcieTypeId, $serviceId, $fromDate = null, $toDate = null, $currencyCode = null)
+    {
+        $apiResponse = null;
+        $response = null;
+        $req = array();
+        if (!$fromDate) {
+            $fromDate = $this->dateOnWhichServiceIsRequired;
+        }
+        if (!$toDate) {
+            $toDate = $this->dateOnWhichServiceEnds;
+        }
+        if (is_array($servcieTypeId)) {
+            $servcieTypeId = $servcieTypeId['service_type_id'];
+        }
+        if (!$servcieTypeId) {
+            $servcieTypeId = $this->servcieTypeId;
+        }
+        if (!$currencyCode) {
+            $currencyCode = $this->currencyCode;
+        }
+        if ($this->roomOccupancy > 0) {
+            $roomOccupancy = $this->roomOccupancy;
+        } else {
+            $roomOccupancy = 2;
+        }
+        if ($this->numberOfPassengers > 0) {
+            $adults = ($this->numberOfPassengers - $this->numberOfChildren);
+        } else {
+            $adults = 2;
+        }
+        if ($this->quantity > 0) {
+            $quantity = $this->quantity;
+        } else {
+            $quantity = 1;
+        }
+        $req['IncomingRequest']['Authenticate'] = array('LICENSEKEY' => $this->licenseKey, 'PASSENGERID' => 0, 'Connector' => 'enmTS');
+        $req['IncomingRequest']['BOOKING_TYPE_ID'] = 0;
+        $req['IncomingRequest']['PRICE_TYPE_ID'] = 0;
+
+        $req['IncomingRequest']['PriceCode'] = 0;
+        $req['IncomingRequest']['SERVICEID'] = $serviceId;
+        $req['IncomingRequest']['FROMDATE'] = $fromDate;
+        $req['IncomingRequest']['TODATE'] = $toDate;
+        $req['IncomingRequest']['ReturnLinkedServiceOptions'] = false;
+
+
+        $req['IncomingRequest']['IGNORECHILDAGE'] = false;
+        $req['IncomingRequest']['RETURNONLYNONACCOMODATIONSERVICES'] = true;
+        $req['IncomingRequest']['APPLYEXCHANGERATES'] = true;
+        $req['IncomingRequest']['CURRENCYISOCODE'] = $currencyCode;
+        $req['IncomingRequest']['ClientId'] = 0;
+        $req['IncomingRequest']['ReturnAppliedChargingPolicyDetails'] = true;
+        if (true) {
+            $req['IncomingRequest']['ExtrasRequired']['ExtraDetail']['OccupancyID'] = 1;
+            $req['IncomingRequest']['ExtrasRequired']['ExtraDetail']['Quantity'] = $quantity;
+            $req['IncomingRequest']['ExtrasRequired']['ExtraDetail']['Adults'] = $adults;
+        }
+        if ($servcieTypeId != 2) {
             $req['IncomingRequest']['VEHICLE']['AvailableOnly'] = true;
-            $req['IncomingRequest']['VEHICLE']['ServiceTypeID'] = $serviceTypeId;
+            $req['IncomingRequest']['VEHICLE']['ServiceTypeID'] = $servcieTypeId;
             $req['IncomingRequest']['VEHICLE']['IsRecommendedProduct'] = false;
             $req['IncomingRequest']['VEHICLE']['LargeLuggage'] = 0;
             $req['IncomingRequest']['VEHICLE']['SmallLuggage'] = 0;
-
-            $req['IncomingRequest']['PriceCode'] = 0;
-            $req['IncomingRequest']['SERVICEID'] = $serviceId;
-            $req['IncomingRequest']['FROMDATE'] = $currentMySqlStartDate;
-            $req['IncomingRequest']['TODATE'] = $currentMySqlEndDate;
-            $req['IncomingRequest']['ReturnLinkedServiceOptions'] = false;
-
-            $req['IncomingRequest']['ExtrasRequired']['ExtraDetail']['OccupancyID'] = $this->roomOccupancy;
-            $req['IncomingRequest']['ExtrasRequired']['ExtraDetail']['Quantity'] = 1;
-            $req['IncomingRequest']['ExtrasRequired']['ExtraDetail']['Adults'] = 2;
-
-            $req['IncomingRequest']['IGNORECHILDAGE'] = false;
-            $req['IncomingRequest']['RETURNONLYNONACCOMODATIONSERVICES'] = true;
-            $req['IncomingRequest']['APPLYEXCHANGERATES'] = true;
-            $req['IncomingRequest']['CURRENCYISOCODE'] = $currencyCode;
-            $req['IncomingRequest']['ClientId'] = 0;
-            $req['IncomingRequest']['ReturnAppliedChargingPolicyDetails'] = true;
-            try {
-                $result = $this->client->GetServiceExtraPrices($req);
-                $this->servicePrice += $this->parsingExtraPriceResponse($result);
-            } catch (Exception $exc) {
-                //
-            }
         }
-        return $this->servicePrice;
+        try {
+            $apiResponse = $this->client->GetServiceExtraPrices($req);
+            if ($this->shouldLogExtrasRequest) {
+                \Illuminate\Support\Facades\File::put(public_path() . "/../last_request.xml", $this->client->__getLastRequest());
+            }
+        } catch (SoapFault $sp) {
+            $this->responseIsSuccessfull = true;
+        }
+        $this->parseExtrasForAServiceForErrors($apiResponse);
+        if (!$this->hasError()) {
+            $response = $this->parseExtrasForAServiceForData($apiResponse);
+        }
+        return $response;
     }
 
-    function parsingExtraPriceResponse($respose)
+    public function parseExtrasForAServiceForErrors($apiResponse)
     {
-        $serviceExtraCost = 0;
-        if (!empty($respose->ServiceExtrasAndPricesResponse) && $respose->ServiceExtrasAndPricesResponse->ResponseList && isset($respose->ServiceExtrasAndPricesResponse->ResponseList->ServiceExtras)) {
-            $serviceExtras = $respose->ServiceExtrasAndPricesResponse->ResponseList->ServiceExtras;
-            if (is_array($serviceExtras)) {
-                foreach ($serviceExtras as $serviceExtraKey => $serviceExtra) {
-                    $serviceExtraCost += $this->checkExtraMandatory($serviceExtra);
-                }
+        if (property_exists($apiResponse->ServiceExtrasAndPricesResponse, "Errors") && property_exists($apiResponse->ServiceExtrasAndPricesResponse->Errors, "Errors")) {
+            $this->responseIsSuccessfull = false;
+        } else {
+            $this->responseIsSuccessfull = true;
+        }
+        return $apiResponse;
+    }
+
+    public function parseExtrasForAServiceForData($apiResponse)
+    {
+        $extras = array();
+        $parsedResponse = array();
+        if (property_exists($apiResponse->ServiceExtrasAndPricesResponse->ResponseList, 'ServiceExtras')) {
+            if (count($apiResponse->ServiceExtrasAndPricesResponse->ResponseList->ServiceExtras) > 1) {
+                $parsedResponse = $apiResponse->ServiceExtrasAndPricesResponse->ResponseList->ServiceExtras;
             } else {
-                $serviceExtraCost += $this->checkExtraMandatory($serviceExtras);
+                $parsedResponse[] = $apiResponse->ServiceExtrasAndPricesResponse->ResponseList->ServiceExtras;
             }
         }
-
-        return $serviceExtraCost;
-    }
-
-    function checkExtraMandatory($serviceExtra)
-    {
-        $serviceExtraCost = 0;
-        if ($serviceExtra->ExtraMandatory == 1) {
-            $serviceExtraCost += $serviceExtra->TOTALPRICE;
+        foreach ($parsedResponse as $i => $extra) {
+            if ($extra && (property_exists($extra, 'ServiceTypeExtraName'))) {
+                $extras[$i]['ServiceTypeExtraName'] = $extra->ServiceTypeExtraName;
+                $extras[$i]['ServiceExtraId'] = $extra->ServiceExtraId;
+                $extras[$i]['OccupancyTypeID'] = $extra->OccupancyTypeID;
+                $extras[$i]['ServiceTypeTypeID'] = $extra->ServiceTypeTypeID;
+                $extras[$i]['ServiceTypeTypeName'] = $extra->ServiceTypeTypeName;
+                $extras[$i]['ExtraMandatory'] = $extra->ExtraMandatory;
+                $extras[$i]['MaxChild'] = $extra->MaxChild;
+                $extras[$i]['MaxAdults'] = $extra->MaxAdults;
+                $extras[$i]['TOTALPRICE'] = ceil($extra->TOTALPRICE);
+            }
         }
-
-        return $serviceExtraCost;
+        $this->parsedResponse = $extras;
+        return $extras;
     }
 
     function checkServiceAvailability($serviceId, $serviceTypeId, $dateOnWhichServiceIsRequired, $nightsForWhichServiceIsRequired, $currencyCode)
     {
-
         if ($this->responseIsSuccessfull && $this->optionId > 0) {
             $currentMySqlStartDate = $this->dateHelper->getMySqlDateFromNormalDate($dateOnWhichServiceIsRequired);
             $currentMySqlEndDate = $this->dateHelper->addDaysToDate($currentMySqlStartDate, $nightsForWhichServiceIsRequired);
             $currentMySqlStartDate = date('d-M-Y', strtotime($currentMySqlStartDate));
-
             $currentMySqlEndDate = date('d-M-Y', strtotime($currentMySqlEndDate));
-
-            /*if (in_array($serviceTypeId, $this->arrivalDetailsTypeArray)) {
-                $currentMySqlEndDate = $currentMySqlStartDate;
-            }
-             *
-             */
 
             $req['IncomingRequest'] = array(
                 'Authenticate' =>
@@ -478,7 +678,7 @@ class TravelStudioClientBase
                 ),
                 'Currency' => 'INR',
                 'TotalAmount' => 0,
-                'BookingReference' => $this->tsBookingIdPoolHelper->getTsBookingIdFromSession(),
+                'BookingReference' => "EI58564",
                 'ClientID' => 0,
                 'BookingStatusID' => 0,
                 'UpdateAction' => 'None',
@@ -585,7 +785,6 @@ class TravelStudioClientBase
                 'CheckDuplicates' => false,
             );
             $result = $this->client->AmendBooking($req);
-            //echo "REQUEST:\n" . $this->client->__getLastRequest() . "\n";
             if (strpos($result->getMessage(), ' Local Invalid Operation-The null value cannot be assigned to a member with type System.Boolean') === false) {
                 $this->responseErrorMsgs = [$result->getMessage()];
                 $this->responseIsSuccessfull = false;
@@ -596,29 +795,28 @@ class TravelStudioClientBase
             $this->responseErrorMsgs = ["Service option is not found"];
             $this->responseIsSuccessfull = false;
         }
-
         return $this->responseIsSuccessfull;
     }
 
-    public  function  serviceRuleCheck($serviceId, $serviceTypeId, $dateOnWhichServiceIsRequired, $nightsForWhichServiceIsRequired,$region_id)
+    public function serviceRuleCheck($serviceId, $serviceTypeId, $dateOnWhichServiceIsRequired, $nightsForWhichServiceIsRequired, $region_id)
     {
-        $data[0] = array('ts_id'=>$serviceId,
-                              'service_type'=> $serviceTypeId,
-                              'start_date'=> $dateOnWhichServiceIsRequired,
-                              'nights'=> $nightsForWhichServiceIsRequired,
-                              'region_id'=>$region_id
-                            );
-        $rulesResult  = $this->serviceRulesHelper->getRulesBysingleService($data);
+        $data[0] = array('ts_id' => $serviceId,
+            'service_type' => $serviceTypeId,
+            'start_date' => $dateOnWhichServiceIsRequired,
+            'nights' => $nightsForWhichServiceIsRequired,
+            'region_id' => $region_id
+        );
+        $rulesResult = $this->serviceRulesHelper->getRulesBysingleService($data);
         return $rulesResult;
     }
 
     public function getBuyCurrency1($serviceId)
     {
         $req['ServiceInfoRequest']['Authenticate'] = array(
-                'LICENSEKEY' => $this->licenseKey,
-                'PASSENGERID' => 0,
-                'Connector' => 'enmTSHotelAPI'
-            );
+            'LICENSEKEY' => $this->licenseKey,
+            'PASSENGERID' => 0,
+            'Connector' => 'enmTSHotelAPI'
+        );
         $req['ServiceInfoRequest']['ServiceId'] = $serviceId;
         $req['ServiceInfoRequest']['IsRatingDataRequired'] = false;
 
@@ -630,12 +828,136 @@ class TravelStudioClientBase
         return $result;
     }
 
-    public function getBuyCurrency($serviceId)
+    function getErrorType()
     {
-        $result = $this->getBuyCurrency1($serviceId);
-        if (!is_null($result)) {
-            return $result->ServiceInformationResponse->CurrencyID;
-        }
-        return 1;
+        return $this->responseErrorType;
     }
+
+    function checkAvailabilityAndCalculateDayWisePriceForService($serviceTsId, $serviceTypeId, $dateOnWhichServiceIsRequired, $nightsForWhichServiceIsRequired, $currencyCode, $serviceCheck, $region_id = NULL, $limitToOneRoomType = false)
+    {
+        $errorMessage = null;
+        $warningtype = null;
+        $warning = null;
+        $rulesCheckResult = $this->serviceRuleCheck($serviceTsId, $serviceTypeId, $dateOnWhichServiceIsRequired, $nightsForWhichServiceIsRequired, $region_id);
+        $rulesResult = $rulesCheckResult[0];
+        if ($errorMessages = $this->serviceRulesHelper->prepareErrorMessages($rulesCheckResult)) {
+            $errorMessage[] = $errorMessages;
+        }
+        if ($rulesResult->response == 'error') {
+            $this->responseErrorType = 'error';
+            $this->responseErrorMsgs = $errorMessage;
+            $this->responseIsSuccessfull = false;
+        } else if ($rulesResult->response == 'region_warning') {
+            $this->responseIsSuccessfull = true;
+            $this->responseErrorType = 'region_warning';
+            $this->responseErrorMsgs = $errorMessage;
+        } else if ($rulesResult->response == 'region_success') {
+            $this->responseIsSuccessfull = true;
+            $this->responseErrorType = 'region_success';
+            $this->responseErrorMsgs = "";
+        } else if ($rulesResult->response == 'warning') {
+            $warningtype = 'warning';
+            $warning = $errorMessage;
+        } else {
+            $this->responseErrorType = "";
+            $this->responseErrorMsgs = "";
+        }
+        $price = $this->getPriceForEachDaySeparatelyAndIfNotAvailableGetPreviousYearPrice($serviceTsId, $serviceTypeId, $dateOnWhichServiceIsRequired, $nightsForWhichServiceIsRequired, $currencyCode, $limitToOneRoomType, $serviceCheck, $region_id);
+        if ($warningtype) {
+            $this->responseErrorType = $warningtype;
+            $this->responseErrorMsgs = $warning;
+        }
+        return $price;
+    }
+
+    function addWarningAndErrorToResponse()
+    {
+        $responseData = [];
+        $responseData['hasError'] = $this->hardStop || $this->softStop;
+        $responseData['isHardStop'] = $this->hardStop;
+        $responseData['errorMsgs'] = $this->getErrorMsgs();
+        $responseData['errorType'] = $this->getErrorType();
+        return $responseData;
+    }
+
+    function getPriceForEachDaySeparatelyAndIfNotAvailableGetPreviousYearPrice($serviceTsId, $serviceTypeId, $startDateOnWhichServiceIsRequired, $nightsForWhichServiceIsRequired, $currencyCode, $limitToOneRoomType, $serviceCheck, $region_id)
+    {
+        $servicePrice = 0;
+        $nightsForEachRequest = 1;
+        for ($i = 0; $i < $nightsForWhichServiceIsRequired; $i++) {
+            $dateOnWhichServiceIsRequired = $this->dateHelper->addDaysToNormalDate($startDateOnWhichServiceIsRequired, $i);
+            $this->getSingleServicePriceAndAvailability($serviceTsId, $serviceTypeId, $dateOnWhichServiceIsRequired, $nightsForEachRequest, $currencyCode, $limitToOneRoomType);
+            if ($this->isServiceNotFound) {
+                $this->responseErrorType = "";
+                $this->responseErrorMsgs = "";
+                $dateOnWhichServiceIsRequired = $this->dateHelper->getPreviousYearDateFromNormalDate($dateOnWhichServiceIsRequired);
+                $this->getSingleServicePriceAndAvailability($serviceTsId, $serviceTypeId, $dateOnWhichServiceIsRequired, $nightsForEachRequest, $currencyCode, $limitToOneRoomType);
+                $servicePrice += $this->servicePrice * $this->incrementForPreviousYearServicePrice;
+                $this->addServicePriceLogEntry($serviceTsId, $serviceTypeId, $dateOnWhichServiceIsRequired, $nightsForEachRequest, $currencyCode, $servicePrice);
+            } else {
+                $servicePrice += $this->servicePrice;
+                $this->perDayServcieOptionsArray[] = $this->serviceOptions;
+            }
+            if (!$this->hasError() && $this->servicePrice == 0 && $serviceTypeId == 2) {
+                $this->responseErrorType = 'warning';
+                $currentServiceName = '';
+                $this->responseErrorMsgs = [$currentServiceName . ' :  Service price is zero'];
+            }
+        }
+        $this->updateServiceOptionPricesFetchedPerDayToTotalPrice();
+        $this->servicePrice = $servicePrice;
+        return $servicePrice;
+    }
+
+    function updateServiceOptionPricesFetchedPerDayToTotalPrice()
+    {
+
+        $totalPriceArrayForOption = [];
+        foreach ($this->perDayServcieOptionsArray as $day => $perDayServcieOptions) {
+            foreach ($perDayServcieOptions as $perDayServcieOption) {
+                $totalPriceArrayForOption[$perDayServcieOption['OptionID']] = array_get($totalPriceArrayForOption, $perDayServcieOption['OptionID'], 0) + $perDayServcieOption['TotalSellingPrice'];
+            }
+        }
+        foreach ($this->serviceOptions as $i => $serviceOption) {
+            $this->serviceOptions[$i]['TotalSellingPrice'] = $totalPriceArrayForOption[$serviceOption['OptionID']];
+        }
+        $this->perDayServcieOptionsArray = [];
+    }
+
+    function addServicePriceLogEntry($serviceTsId, $serviceTypeId, $dateOnWhichServiceIsRequired, $nightsForWhichServiceIsRequired, $currencyCode, $servicePrice)
+    {
+        if (!$this->hasError()) {
+            $servicePriceLog = new \ServicePriceLog();
+            $servicePriceLog->service_tsid = $serviceTsId;
+            $servicePriceLog->service_name = $this->getServiceName($serviceTsId, $serviceTypeId);
+            $servicePriceLog->service_type_id = $serviceTypeId;
+            $servicePriceLog->currency = $currencyCode;
+            $servicePriceLog->service_start_date = $this->dateHelper->getMySqlDateTimeFromNormalDate($dateOnWhichServiceIsRequired);
+            $servicePriceLog->no_nights = $nightsForWhichServiceIsRequired;
+            $servicePriceLog->price = $servicePrice;
+            $servicePriceLog->save();
+        }
+    }
+
+    function getServiceName($serviceTsId, $serviceTypeId)
+    {
+        $currentServiceName = null;
+        if ($serviceTsId) {
+            if ($serviceTypeId == 3 || $serviceTypeId == 5 || $serviceTypeId == 30) {
+                $service = \Activity::where('activity_tsid', '=', $serviceTsId)->first();
+                $currentServiceName = $service->activity_name;
+            } elseif ($serviceTypeId == 2) {
+                $service = \Hotels::where('hotel_tsid', '=', $serviceTsId)->first();
+                $currentServiceName = $service->hotel_name;
+            } elseif ($serviceTypeId == 20 || $serviceTypeId == 24) {
+                $service = \InternalService::where('service_tsid', '=', $serviceTsId)->first();
+                $currentServiceName = $service->service_name;
+            } else {
+                $service = \Service::where('service_tsid', '=', $serviceTsId)->first();
+                $currentServiceName = $service->service_name;
+            }
+        }
+        return $currentServiceName;
+    }
+
 }

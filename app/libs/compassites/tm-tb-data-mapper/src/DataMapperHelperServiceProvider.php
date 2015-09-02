@@ -3,6 +3,7 @@
 namespace Compassites\DataMapperHelper;
 
 use Illuminate\Support\ServiceProvider;
+use Compassites\DataMapperHelper\DataMapperHelper;
 
 class DataMapperHelperServiceProvider extends ServiceProvider {
 
@@ -20,7 +21,7 @@ class DataMapperHelperServiceProvider extends ServiceProvider {
      */
     public function register() {
         $this->app->singleton('Compassites\DataMapperHelper\DataMapperHelper', function($app) {
-            return new DataMapperHelper($app['DateHelper']);
+            return new DataMapperHelper($app['DateHelper'], $app['Service'], new \Illuminate\Database\Eloquent\Collection(), $app['TravelStudio']);
         });
     }
 

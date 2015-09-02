@@ -20,7 +20,7 @@ class TravelStudioClientServiceProvider extends ServiceProvider {
      */
     public function register() {
         $this->app->singleton('Compassites\TravelStudioClient\TravelStudioClient', function($app) {
-            return new TravelStudioClient($app['DateHelper'],$app['TsBookingIdPoolHelper'], $app['EnvironmentHelper'],$app['ServiceRulesHelper']);
+            return new TravelStudioClient($app['DateHelper'],$app['Illuminate\Session\Store'], $app['ServiceRulesHelper']);
         });
     }
 
