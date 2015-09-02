@@ -1,6 +1,6 @@
 <?php 
 
-namespace Enchanting\MigrateTs\Models;
+namespace App\Models;
 
 class ExchangeRate extends \Illuminate\Database\Eloquent\Model {
 

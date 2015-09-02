@@ -1,6 +1,6 @@
 <?php 
 
-namespace Enchanting\MigrateTs\Models;
+namespace App\Models;
 
 class ServiceExtra extends \Illuminate\Database\Eloquent\Model {
     
@@ -8,12 +8,12 @@ class ServiceExtra extends \Illuminate\Database\Eloquent\Model {
 
     public function prices(){
 
-        return $this->morphMany('Enchanting\MigrateTs\Models\Price', 'priceable');
+        return $this->morphMany('App\Models\Price', 'priceable');
     }
 
     public function service_option(){
 
-        return $this->belongsTo('Enchanting\MigrateTs\Models\ServiceOption');
+        return $this->belongsTo('App\Models\ServiceOption');
 
     }
 

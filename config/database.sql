@@ -159,6 +159,7 @@ CREATE TABLE `prices` (
   `priceable_id` bigint(12) NOT NULL,
   `priceable_type` varchar(255) NOT NULL,
   `season_period_id` bigint(12) NOT NULL,
+  `service_id` bigint(12) NOT NULL,
   `buy_price` DECIMAL(10, 2) NOT NULL,
   `sell_price` DECIMAL(10, 2) NOT NULL,
   `has_details` boolean DEFAULT 0,
@@ -166,6 +167,7 @@ CREATE TABLE `prices` (
   `created_at` datetime DEFAULT NULL,
   `updated_at` datetime DEFAULT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `price` (`priceable_id`,`priceable_type`, `season_period_id`, `buy_price`, `sell_price`),
-  FOREIGN KEY (`season_period_id`) REFERENCES season_periods(`id`)
+  UNIQUE KEY `price` (`service_id`,`priceable_id`,`priceable_type`, `season_period_id`, `buy_price`, `sell_price`),
+  FOREIGN KEY (`season_period_id`) REFERENCES season_periods(`id`),
+  FOREIGN KEY (`service_id`) REFERENCES services(`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;

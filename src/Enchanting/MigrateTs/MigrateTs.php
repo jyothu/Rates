@@ -1,6 +1,6 @@
 <?php
 
-namespace Enchanting\MigrateTs;
+namespace App;
 
 /**
 * 

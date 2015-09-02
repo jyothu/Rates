@@ -1,6 +1,6 @@
 <?php 
 
-namespace Enchanting\MigrateTs\Models;
+namespace App\Models;
 
 class Meal extends \Illuminate\Database\Eloquent\Model {
     
@@ -8,7 +8,7 @@ class Meal extends \Illuminate\Database\Eloquent\Model {
 
 	public function meal_options(){
 
-        return $this->hasMany('Enchanting\MigrateTs\Models\MealOption');
+        return $this->hasMany('App\Models\MealOption');
 
     }
 

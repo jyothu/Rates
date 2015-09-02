@@ -1,6 +1,6 @@
 <?php
 
-namespace Enchanting\MigrateTs\Models;
+namespace App\Models;
 
 class Currency extends \Illuminate\Database\Eloquent\Model {
 
@@ -8,7 +8,7 @@ class Currency extends \Illuminate\Database\Eloquent\Model {
 
 	public function services(){
 
-        return $this->hasMany('Enchanting\MigrateTs\Models\Service');
+        return $this->hasMany('App\Models\Service');
 
     }
 

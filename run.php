@@ -2,7 +2,7 @@
 include "vendor/autoload.php";
 include "config/database.php";
 
-use Enchanting\MigrateTs\Models as Models;
+use App\Models as Models;
 
 if( !isset( $argv[1] ) ){
     echo "Expecting CSV File\n";
@@ -71,7 +71,11 @@ foreach($csvFile as $row) {
 
 
     // // Find or Create Prices 
-    $priceParams = array('season_period_id' => $seasonPeriodObj->id, 'buy_price' => $buyingPrice, 'sell_price' => $sellingPrice);
+    $priceParams = array('season_period_id' => $seasonPeriodObj->id,
+        'buy_price' => $buyingPrice,
+        'sell_price' => $sellingPrice,
+        'service_id' => $serviceId
+    );
     $serviceOptionObj->prices()->firstOrCreate( $priceParams );
 
     echo "Service ".$serviceObj->id." / ".$serviceObj->name." has been created...\n";

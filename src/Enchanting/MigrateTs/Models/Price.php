@@ -1,10 +1,10 @@
 <?php 
 
-namespace Enchanting\MigrateTs\Models;
+namespace App\Models;
 
 class Price extends \Illuminate\Database\Eloquent\Model {
     
-    protected $fillable = array('id', 'season_period_id', 'buy_price', 'sell_price', 'has_details', 'status');
+    protected $fillable = array('id', 'service_id', 'season_period_id', 'buy_price', 'sell_price', 'has_details', 'status');
 
     public function priceable(){
 
@@ -13,7 +13,13 @@ class Price extends \Illuminate\Database\Eloquent\Model {
     
     public function season_period(){
 
-        return $this->belongsTo('Enchanting\MigrateTs\Models\SeasonPeriod');
+        return $this->belongsTo('App\Models\SeasonPeriod');
+
+    }
+
+    public function service(){
+
+        return $this->belongsTo('App\Models\Service');
 
     }
 

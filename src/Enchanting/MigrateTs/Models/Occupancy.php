@@ -1,6 +1,6 @@
 <?php 
 
-namespace Enchanting\MigrateTs\Models;
+namespace App\Models;
 
 class Occupancy extends \Illuminate\Database\Eloquent\Model {
     
@@ -8,7 +8,7 @@ class Occupancy extends \Illuminate\Database\Eloquent\Model {
 
 	public function service_options(){
 
-        return $this->hasMany('Enchanting\MigrateTs\Models\ServiceOption');
+        return $this->hasMany('App\Models\ServiceOption');
 
     }
 

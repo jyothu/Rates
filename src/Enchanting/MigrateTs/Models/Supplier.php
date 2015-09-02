@@ -1,6 +1,6 @@
 <?php 
 
-namespace Enchanting\MigrateTs\Models;
+namespace App\Models;
 
 class Supplier extends \Illuminate\Database\Eloquent\Model {
     
@@ -8,13 +8,13 @@ class Supplier extends \Illuminate\Database\Eloquent\Model {
 
     public function services(){
 
-        return $this->hasMany('Enchanting\MigrateTs\Models\Service');
+        return $this->hasMany('App\Models\Service');
 
     }
 
     public function region(){
 
-        return $this->belongsTo('Enchanting\MigrateTs\Models\Region');
+        return $this->belongsTo('App\Models\Region');
 
     }
 

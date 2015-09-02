@@ -1,6 +1,6 @@
 <?php 
 
-namespace Enchanting\MigrateTs\Models;
+namespace App\Models;
 
 class Season extends \Illuminate\Database\Eloquent\Model {
 
@@ -14,7 +14,7 @@ class Season extends \Illuminate\Database\Eloquent\Model {
 
 	public function season_periods(){
 
-        return $this->hasMany('Enchanting\MigrateTs\Models\SeasonPeriod');
+        return $this->hasMany('App\Models\SeasonPeriod');
 
     }
 
