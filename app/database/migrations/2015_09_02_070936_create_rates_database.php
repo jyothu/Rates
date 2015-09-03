@@ -236,6 +236,7 @@ class CreateRatesDatabase
             $table->engine = 'InnoDB';
             $table->foreign('season_period_id')->references('id')->on('season_periods');
             $table->foreign('service_id')->references('id')->on('services');
+            $table->unique(['service_id', 'priceable_id', 'priceable_type', 'season_period_id', 'buy_price', 'sell_price'], 'price');
         });
     }
  
