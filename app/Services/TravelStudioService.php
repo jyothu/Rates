@@ -25,6 +25,6 @@ class TravelStudioService
 
     public function pullRatesFromTravelStudio($funcName, $params)
     {
-        print_r($this->soapClient()->$funcName($params)); exit();
+        return $this->soapClient()->$funcName($params);
     }
 }
