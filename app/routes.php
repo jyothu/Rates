@@ -24,8 +24,8 @@ Route::group(['prefix' => 'api'], function () {
     Route::group(['prefix' => 'v1', 'before' => 'authv1'], function () {
 
         Route::post(
-            '/service/price',
-            ['uses' => 'App\Controllers\ApiController@getServicePrice']
+            '{uri}',
+            ['uses' => 'App\Controllers\ApiController@callFunction']
         );
 
     });
