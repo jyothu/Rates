@@ -32,12 +32,16 @@ class CurlHelper
             curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
             curl_setopt($ch, CURLOPT_USERPWD, "travelmaker:tr@velm@ker");
         }
-        curl_setopt($ch, CURLOPT_URL, $this->apiRequestUrl);
+        if($this->isMethodPost){
+            curl_setopt($ch, CURLOPT_URL, $this->apiRequestUrl);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $curlData);
+        } else {
+            curl_setopt($ch, CURLOPT_URL, $this->apiRequestUrl."?".$curlData);
+        }
         curl_setopt($ch, CURLOPT_VERBOSE, 1);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, FALSE);
         curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, FALSE);
         curl_setopt($ch, CURLOPT_POST, $this->isMethodPost);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $curlData);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
         return $this->httpResponse = curl_exec($ch);
     }
