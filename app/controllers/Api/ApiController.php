@@ -35,11 +35,17 @@ class ApiController extends BaseController
         $validator = Validator::make($requestData['IncomingRequest'], $this->serviceRules);
 
         if ($validator->fails()){
-            $response["GetServicesPricesAndAvailabilityResult"]["Errors"] => $validator->errors()->all();
+            $response["GetServicesPricesAndAvailabilityResult"]["Errors"] = $validator->errors()->all();
         }
         else 
         {
-            $response = $this->apiService->collectServicePrices($requestData['IncomingRequest']['SERVICEIDs'], $requestData['IncomingRequest']['START_DATE'], $requestData['IncomingRequest']['NUMBER_OF_NIGHTS'], $requestData['IncomingRequest']["CURRENCY"], $requestData['IncomingRequest']["ROOMS_REQUIRED"]["ROOM"][0]["QUANTITY"]);
+            if (isset($requestData['IncomingRequest']["ROOMS_REQUIRED"]["ROOM"]["QUANTITY"])) {
+                $quantity = $requestData['IncomingRequest']["ROOMS_REQUIRED"]["ROOM"]["QUANTITY"];
+            } else {
+                $quantity = $requestData['IncomingRequest']["ROOMS_REQUIRED"]["ROOM"][0]["QUANTITY"];                
+            }
+            
+            $response = $this->apiService->collectServicePrices($requestData['IncomingRequest']['SERVICEIDs'], $requestData['IncomingRequest']['START_DATE'], $requestData['IncomingRequest']['NUMBER_OF_NIGHTS'], $requestData['IncomingRequest']["CURRENCY"], $quantity);
             if( !$this->apiService->isRatesAvailableLocally )
             {
                 $funcName = __FUNCTION__;
