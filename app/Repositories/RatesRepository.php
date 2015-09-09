@@ -8,15 +8,14 @@ use Carbon\Carbon;
 use DateTime;
 use DateInterval;
 use DatePeriod;
-use App\Services\ConvertCurrency;
 use SoapBox\Formatter\Formatter;
 
 class RatesRepository
 {
-    public function __construct(Service $service, ConvertCurrency $convertCurrency)
+    public function __construct(Service $service, ExchangeRateRepository $exchangeRateRepository)
     {
         $this->service = $service;
-        $this->convertCurrency = $convertCurrency;
+        $this->exchangeRateRepository = $exchangeRateRepository;
     }
 
     public function getServiceById($serviceId)
@@ -36,7 +35,6 @@ class RatesRepository
 
     public function getService($serviceId)
     {
-       // return DB::select("select s.id,s.name,code from services as s join currencies on (s.currency_id = currencies.id) WHERE s.id=?", [$serviceId]);
        return Service::with('currency')->find( $serviceId );
     }
 
@@ -44,7 +42,7 @@ class RatesRepository
     {        
 
         $service = $this->getService( $serviceId );
-        $exchangeRate = $this->convertCurrency->exchangeRate($currency, $service->currency->code);
+        $exchangeRate = $this->exchangeRateRepository->exchangeRate($service->currency->code, $currency);
 
         $carbonEnd = Carbon::parse($endDate);
         $actualEnd = $carbonEnd->subDay()->format('Y-m-d');
@@ -103,8 +101,8 @@ class RatesRepository
                 "MaxChild" => 0,
                 "Occupancy" => $value["occupancy_id"],
                 "Currency" => $currency,
-                "TotalSellingPrice" => ($value["totalSellingPrice"]/$exchangeRate)*$quantity, 
-                "TotalBuyingPrice" => ($value["totalBuyingPrice"]/$exchangeRate)*$quantity,
+                "TotalSellingPrice" => ($value["totalSellingPrice"]*$exchangeRate)*$quantity, 
+                "TotalBuyingPrice" => ($value["totalBuyingPrice"]*$exchangeRate)*$quantity,
                 "OptionID" => $value["option_id"],
                 "ServiceOptionName" => $value["option_name"]
             );
