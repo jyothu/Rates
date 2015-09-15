@@ -15,7 +15,7 @@ class RateController extends BaseController
     public function getOptions()
     {
         $serviceId = Input::get('service');
-        $service = $this->ratesRepo->getServiceById($serviceId);
+        $service = $this->ratesRepo->getServiceByTsId($serviceId);
         $serviceOptions = isset( $service ) ? $service->service_options : [];
         if (empty($serviceOptions)) {
             return ['error' => 'Invalid Service ID'];
