@@ -4,14 +4,14 @@ namespace App\Models;
 
 class Price extends \Illuminate\Database\Eloquent\Model {
     
-    protected $fillable = array('id', 'service_id', 'season_period_id', 'buy_price', 'sell_price', 'has_details', 'status');
+    protected $fillable = array('service_id', 'season_period_id', 'buy_price', 'sell_price', 'has_details', 'status');
 
     public function priceable(){
 
         return $this->morphTo();
     }
     
-    public function season_period(){
+    public function seasonPeriod(){
 
         return $this->belongsTo('App\Models\SeasonPeriod');
 

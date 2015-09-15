@@ -4,15 +4,15 @@ namespace App\Models;
 
 class Season extends \Illuminate\Database\Eloquent\Model {
 
-	protected $fillable = array('name', 'service_id', 'status');
+	protected $fillable = array('name', 'contract_period_id', 'ts_id', 'status');
 
-    public function service(){
+    public function contractPeriod(){
 
-        return $this->belongsTo('Service');
+        return $this->belongsTo('App\Models\ContractPeriod');
 
     }
 
-	public function season_periods(){
+	public function seasonPeriods(){
 
         return $this->hasMany('App\Models\SeasonPeriod');
 

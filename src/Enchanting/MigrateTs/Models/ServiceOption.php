@@ -4,7 +4,7 @@ namespace App\Models;
 
 class ServiceOption extends \Illuminate\Database\Eloquent\Model {
     
-    protected $fillable = array('service_id', 'occupancy_id', 'name', 'has_extra', 'status');
+    protected $fillable = array('ts_id', 'service_id', 'service_extra_id', 'occupancy_id', 'name', 'status');
 
     public function prices(){
 
@@ -12,13 +12,7 @@ class ServiceOption extends \Illuminate\Database\Eloquent\Model {
         
     }
 
-    public function service_extras(){
-
-        return $this->hasMany('App\Models\ServiceExtra');
-    
-    }
-
-    public function meal_options(){
+    public function mealOptions(){
 
         return $this->hasMany('App\Models\MealOption');
     
@@ -28,6 +22,12 @@ class ServiceOption extends \Illuminate\Database\Eloquent\Model {
 
         return $this->belongsTo('App\Models\Occupancy');
 
+    }
+
+    public function serviceExtra(){
+
+        return $this->belongsTo('App\Models\ServiceExtra');
+    
     }
 
     public function service(){

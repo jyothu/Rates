@@ -1,5 +1,16 @@
+CREATE TABLE `policies` (
+  `id` bigint(12) NOT NULL AUTO_INCREMENT,
+  `ts_id` bigint(12) NOT NULL,
+  `name` varchar(255) NOT NULL UNIQUE,
+  `status` tinyint(1) DEFAULT 1,
+  `created_at` datetime DEFAULT NULL,
+  `updated_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
 CREATE TABLE `service_types` (
-  `id` bigint(12) NOT NULL,
+  `id` bigint(12) NOT NULL AUTO_INCREMENT,
+  `ts_id` bigint(12) NOT NULL,
   `name` varchar(255) NOT NULL UNIQUE,
   `status` tinyint(1) DEFAULT 1,
   `created_at` datetime DEFAULT NULL,
@@ -8,7 +19,8 @@ CREATE TABLE `service_types` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 CREATE TABLE `regions` (
-  `id` bigint(12) NOT NULL,
+  `id` bigint(12) NOT NULL AUTO_INCREMENT,
+  `ts_id` bigint(12) NOT NULL,
   `name` varchar(255) NOT NULL UNIQUE,
   `parent_id` bigint(12) NOT NULL,
   `status` tinyint(1) DEFAULT 1,
@@ -30,6 +42,7 @@ CREATE TABLE `currencies` (
 
 CREATE TABLE `suppliers` (
   `id` bigint(12) NOT NULL AUTO_INCREMENT,
+  `ts_id` bigint(12) NOT NULL,
   `name` varchar(255) NOT NULL,
   `description` text(1000) DEFAULT NULL,
   `region_id` bigint(12) NOT NULL,
@@ -42,7 +55,8 @@ CREATE TABLE `suppliers` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 CREATE TABLE `services` (
-  `id` bigint(12) NOT NULL,
+  `id` bigint(12) NOT NULL AUTO_INCREMENT,
+  `ts_id` bigint(12) NOT NULL,
   `short_name` varchar(25) DEFAULT NULL,
   `name` varchar(255) NOT NULL,
   `description` text(1000) DEFAULT NULL,
@@ -74,8 +88,8 @@ CREATE TABLE `exchange_rates` (
 CREATE TABLE `occupancies` (
   `id` bigint(12) NOT NULL AUTO_INCREMENT,
   `name` varchar(25) NOT NULL UNIQUE,
-  `min_adults` integer(12) NOT NULL DEFAULT 0,
   `max_adults` integer(12) NOT NULL,
+  `max_children` integer(12) NOT NULL,
   `status` tinyint(1) DEFAULT 1,
   `created_at` datetime DEFAULT NULL,
   `updated_at` datetime DEFAULT NULL,
@@ -91,31 +105,33 @@ CREATE TABLE `meals` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-
-CREATE TABLE `service_options` (
-  `id` bigint(12) NOT NULL AUTO_INCREMENT,
-  `service_id` bigint(12) NOT NULL,
-  `occupancy_id` bigint(12) NOT NULL,
-  `name` varchar(255) NOT NULL,
-  `has_extra` boolean DEFAULT 0,
-  `status` tinyint(1) DEFAULT 1,
-  `created_at` datetime DEFAULT NULL,
-  `updated_at` datetime DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  FOREIGN KEY (`service_id`) REFERENCES services(`id`),
-  FOREIGN KEY (`occupancy_id`) REFERENCES occupancies(`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
 CREATE TABLE `service_extras` (
   `id` bigint(12) NOT NULL AUTO_INCREMENT,
-  `service_option_id` bigint(12) NOT NULL,
+  `ts_id` bigint(12) NOT NULL,
+  `service_id` bigint(12) NOT NULL,
   `name` varchar(255) NOT NULL,
   `mandatory` boolean DEFAULT 0,
   `status` tinyint(1) DEFAULT 1,
   `created_at` datetime DEFAULT NULL,
   `updated_at` datetime DEFAULT NULL,
   PRIMARY KEY (`id`),
-  FOREIGN KEY (`service_option_id`) REFERENCES service_options(`id`)
+  FOREIGN KEY (`service_id`) REFERENCES services(`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE `service_options` (
+  `id` bigint(12) NOT NULL AUTO_INCREMENT,
+  `ts_id` bigint(12) NOT NULL,
+  `service_id` bigint(12) NOT NULL,
+  `occupancy_id` bigint(12) NOT NULL,
+  `name` varchar(255) NOT NULL,
+  `service_extra_id` bigint(12) NULL,
+  `status` tinyint(1) DEFAULT 1,
+  `created_at` datetime DEFAULT NULL,
+  `updated_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  FOREIGN KEY (`service_id`) REFERENCES services(`id`),
+  FOREIGN KEY (`service_extra_id`) REFERENCES service_extras(`id`),
+  FOREIGN KEY (`occupancy_id`) REFERENCES occupancies(`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 CREATE TABLE `meal_options` (
@@ -130,8 +146,9 @@ CREATE TABLE `meal_options` (
   FOREIGN KEY (`meal_id`) REFERENCES meals(`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE `seasons` (
+CREATE TABLE `contracts` (
   `id` bigint(12) NOT NULL AUTO_INCREMENT,
+  `ts_id` bigint(12) NOT NULL,
   `service_id` bigint(12) NOT NULL,
   `name` varchar(255) NOT NULL,
   `status` tinyint(1) DEFAULT 1,
@@ -140,6 +157,33 @@ CREATE TABLE `seasons` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `name` (`name`,`service_id`),
   FOREIGN KEY (`service_id`) REFERENCES services(`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE `contract_periods` (
+  `id` bigint(12) NOT NULL AUTO_INCREMENT,
+  `ts_id` bigint(12) NOT NULL,
+  `contract_id` bigint(12) NOT NULL,
+  `name` varchar(255) NOT NULL,
+  `start` date NOT NULL,
+  `end` date NOT NULL,
+  `status` tinyint(1) DEFAULT 1,
+  `created_at` datetime DEFAULT NULL,
+  `updated_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  FOREIGN KEY (`contract_id`) REFERENCES contracts(`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE `seasons` (
+  `id` bigint(12) NOT NULL AUTO_INCREMENT,
+  `ts_id` bigint(12) NOT NULL,
+  `contract_period_id` bigint(12) NOT NULL,
+  `name` varchar(255) NOT NULL,
+  `status` tinyint(1) DEFAULT 1,
+  `created_at` datetime DEFAULT NULL,
+  `updated_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `name` (`name`,`contract_period_id`),
+  FOREIGN KEY (`contract_period_id`) REFERENCES contract_periods(`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 CREATE TABLE `season_periods` (

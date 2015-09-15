@@ -4,7 +4,7 @@ namespace App\Models;
 
 class Region extends \Illuminate\Database\Eloquent\Model {
     
-    protected $fillable = array('id', 'name', 'parent_id');
+    protected $fillable = array('ts_id', 'name', 'parent_id');
 
 
     public function services(){

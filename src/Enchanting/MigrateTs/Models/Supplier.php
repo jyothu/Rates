@@ -4,7 +4,7 @@ namespace App\Models;
 
 class Supplier extends \Illuminate\Database\Eloquent\Model {
     
-    protected $fillable = array('name', 'description', 'region_id', 'status', 'id');
+    protected $fillable = array('name', 'description', 'region_id', 'status', 'ts_id');
 
     public function services(){
 

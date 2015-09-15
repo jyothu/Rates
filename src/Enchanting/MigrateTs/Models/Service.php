@@ -4,11 +4,11 @@ namespace App\Models;
 
 class Service extends \Illuminate\Database\Eloquent\Model {
     
-    protected $fillable = array('id', 'short_name', 'name', 'description', 'service_type_id', 'region_id', 'supplier_id', 'currency_id', 'status');
+    protected $fillable = array('ts_id', 'short_name', 'name', 'description', 'service_type_id', 'region_id', 'supplier_id', 'currency_id', 'status');
 
-    public function seasons(){
+    public function contracts(){
 
-        return $this->hasMany('App\Models\Season');
+        return $this->hasMany('App\Models\Contract');
     
     }
 
@@ -18,13 +18,19 @@ class Service extends \Illuminate\Database\Eloquent\Model {
     
     }
 
-    public function service_options(){
+    public function serviceOptions(){
 
         return $this->hasMany('App\Models\ServiceOption');
     
     }
 
-    public function service_type(){
+    public function serviceExtras(){
+
+        return $this->hasMany('App\Models\ServiceExtra');
+    
+    }
+
+    public function serviceType(){
 
         return $this->belongsTo('App\Models\ServiceType');
     
