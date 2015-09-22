@@ -8,6 +8,11 @@
 		"laravel/framework": "4.2.*",
 		"soapbox/laravel-formatter": "^2.0"
 	},
+
+	"require-dev": {
+        "way/generators": "~2.0"
+    },
+
 	"autoload": {
 		"classmap": [
 			"app/libs",
