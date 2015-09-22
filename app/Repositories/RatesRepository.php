@@ -99,8 +99,8 @@ class RatesRepository
                 "MaxAdult" =>  $value["max_adults"],
                 "Occupancy" => $value["occupancy_id"],
                 "Currency" => $currency,
-                "TotalSellingPrice" => ($value["totalSellingPrice"]*$exchangeRate)*$quantity, 
-                "TotalBuyingPrice" => ($value["totalBuyingPrice"]*$exchangeRate)*$quantity,
+                "TotalSellingPrice" => ceil(($value["totalSellingPrice"]*$exchangeRate)*$quantity), 
+                "TotalBuyingPrice" => ceil(($value["totalBuyingPrice"]*$exchangeRate)*$quantity),
                 "OptionID" => $value["option_id"],
                 "ServiceOptionName" => $value["option_name"]
             );

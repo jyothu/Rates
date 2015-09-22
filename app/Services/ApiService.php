@@ -18,9 +18,10 @@ class ApiService
 
     function collectServicePrices( $serviceTsIds, $startDate, $nights, $currency, $quantity )
     {
-    	$this->isRatesAvailableLocally = false;
+        $this->isRatesAvailableLocally = false;
         $service = $this->ratesRepository->getServiceByTsId($serviceTsIds); 
-    	if ($service !== null) { 
+    	if ($service !== null) {
+            $startDate = Carbon::parse($startDate)->format('Y-m-d');
             $endDate = Carbon::parse($startDate)->addDays($nights)->format('Y-m-d');
             $data = $this->ratesRepository->calculateTotalServiceRate($service->id, $startDate, $endDate, $currency, $quantity);
             $this->isRatesAvailableLocally = true;
