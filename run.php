@@ -22,7 +22,6 @@ foreach ($rows as $row) {
 
 foreach($csv as $row) {
     
-    print_r($row);
 	$region = $row["REGIONNAME"];
 	$serviceId = $row["SERVICEID"];
 	$serviceName = $row["SERVICELONGNAME"];
@@ -97,6 +96,7 @@ foreach($csv as $row) {
     }
 
     // Find Or Create Service Option
+    $optionObj = null;
     if ($optionId) {
 		$serviceOptionParams = array('occupancy_id' => $occupancyObj->id, 'name' => $optionName, 'ts_id' => $optionId);
 	    $optionObj = $serviceObj->serviceOptions()->firstOrCreate( $serviceOptionParams );
@@ -111,13 +111,25 @@ foreach($csv as $row) {
         'sell_price' => $sellPrice,
         'service_id' => $serviceObj->id
     );
-    if ($extraObj) {
-    	$extraObj->prices()->firstOrCreate( $priceParams );
-    } else {
-    	$optionObj->prices()->firstOrCreate( $priceParams );
+
+
+    if ($optionName == "Suite (Single)") {
+        print_r($row);
+        print_r($seasonPeriodParams);
+        print_r($priceParams);
+    }
+
+    // if ($extraObj) {
+    // 	$extraObj->prices()->firstOrCreate( $priceParams );
+    // } elseif ($optionObj) {
+    // 	$optionObj->prices()->firstOrCreate( $priceParams );
+    // }
+    if ($optionObj) {
+        $optionObj->prices()->firstOrCreate( $priceParams );
     }
     
 
+    
     echo "Service ".$serviceObj->id." / ".$serviceObj->name." has been created...\n";
 }
 
