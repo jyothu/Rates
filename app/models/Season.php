@@ -1,6 +1,6 @@
 <?php
 
-namespace Enchanting\MigrateTs\Models;
+namespace App\Models;
 
 class Season extends \Eloquent
 {

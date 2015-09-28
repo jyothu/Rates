@@ -9,7 +9,7 @@ class Occupancy extends \Eloquent
 
     public function serviceOptions()
     {
-        return $this->hasMany('Enchanting\MigrateTs\Models\ServiceOption');
+        return $this->hasMany('App\Models\ServiceOption');
 
     }
 }

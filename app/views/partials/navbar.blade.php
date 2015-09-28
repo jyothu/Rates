@@ -12,6 +12,7 @@
     <div id="navbar" class="collapse navbar-collapse">
       <ul class="nav navbar-nav">
         <li class="{{ Route::currentRouteName() == 'rates' ? 'active' : '' }}"><a href="{{ URL::route('rates') }}">Rates</a></li>
+        <li class="{{ Route::currentRouteName() == 'services' ? 'active' : '' }}"><a href="{{ URL::route('services') }}">Services</a></li>
       </ul>
     </div><!--/.nav-collapse -->
   </div>

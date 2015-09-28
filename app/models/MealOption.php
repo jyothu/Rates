@@ -10,7 +10,7 @@ class MealOption extends \Eloquent
     public function meal()
     {
 
-        return $this->belongsTo('Enchanting\MigrateTs\Models\Meal');
+        return $this->belongsTo('App\Models\Meal');
 
     }
 }

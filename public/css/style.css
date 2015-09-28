@@ -5,8 +5,8 @@
 .search-form{
 	background: none repeat scroll 0 0 #fff;
     border: 1px solid #ccc;
-    height: 210px;
     padding: 10px;
+    margin-bottom: 20px;
 }
 
 .search-result{

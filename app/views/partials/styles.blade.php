@@ -1,4 +1,3 @@
-<!-- Bootstrap -->
-<link href="css/bootstrap.min.css" rel="stylesheet">
-<link href="css/style.css" rel="stylesheet">
-<link href="css/bootstrap-datetimepicker.css" rel="stylesheet">
+{{ HTML::style('css/bootstrap.min.css') }}
+{{ HTML::style('css/style.css') }}
+{{ HTML::style('css/bootstrap-datetimepicker.css') }}

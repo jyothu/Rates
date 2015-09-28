@@ -10,6 +10,33 @@ Route::get(
     ['as' => 'rates', 'uses' => 'HomeController@showRates']
 );
 
+Route::get(
+    '/services',
+    ['as' => 'services', 'uses' => 'ServiceController@index']
+);
+
+Route::get(
+    '/services/create',
+    ['as' => 'services.create', 'uses' => 'ServiceController@create']
+);
+
+Route::get(
+    '/services/{id}',
+    ['as' => 'services.show', 'uses' => 'ServiceController@show']
+);
+
+
+Route::get(
+    '/services/{id}/edit',
+    ['as' => 'services.edit', 'uses' => 'ServiceController@edit']
+);
+
+
+Route::post(
+    '/services', ['as' => 'services.store', 'uses' => 'ServiceController@store']
+);
+
+
 Route::post(
     '/service/options',
     ['uses' => 'RateController@getOptions']

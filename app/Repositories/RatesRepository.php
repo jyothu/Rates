@@ -30,7 +30,7 @@ class RatesRepository
 
     public function getAllServiceRate($serviceId, $startDate, $endDate)
     {
-        return DB::select("select buy_price, sell_price, season_period_id, start, end, priceable_id as option_id, service_options.name as option_name, occ.name as occupancy_name, occ.id as occupancy_id, max_adults, max_children from prices join service_options on (prices.priceable_id = service_options.id) join season_periods on (prices.season_period_id=season_periods.id) join occupancies occ on (service_options.occupancy_id=occ.id) where priceable_id IN (select id from service_options where service_id=?) AND season_period_id IN (select id from season_periods where  start<=? AND end>=? OR start<=? AND end>=?)", [$serviceId, $startDate, $startDate, $endDate, $endDate]);
+        return DB::select("select buy_price, sell_price, season_period_id, start, end, priceable_id as option_id, service_options.name as option_name, occ.name as occupancy_name, occ.id as occupancy_id, max_adults, max_children from prices join service_options on (prices.priceable_id = service_options.id) join season_periods on (prices.season_period_id=season_periods.id) join occupancies occ on (service_options.occupancy_id=occ.id) where priceable_id IN (select id from service_options where service_id=?) AND season_period_id IN (select id from season_periods where  start<=? AND end>=? OR start<=? AND end>=?) and service_options.status=?", [$serviceId, $startDate, $startDate, $endDate, $endDate, 1]);
     }
 
     public function getService($serviceId)

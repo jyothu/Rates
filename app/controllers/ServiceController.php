@@ -1,4 +1,7 @@
 <?php
+use App\Models\Service;
+use App\Models\ServiceType;
+use App\Models\Region;
 
 class ServiceController extends \BaseController {
 
@@ -10,7 +13,8 @@ class ServiceController extends \BaseController {
 	 */
 	public function index()
 	{
-		//
+		$services = Service::with('serviceType', 'supplier', 'region', 'currency')->paginate(10);
+		return View::make('services.index', ['services' => $services]);
 	}
 
 	/**
@@ -21,7 +25,11 @@ class ServiceController extends \BaseController {
 	 */
 	public function create()
 	{
-		//
+		$service = new Service();
+		$serviceTypes = ServiceType::select('id','name')->get();
+		// $regions = Region::all();
+		// $serviceTypes = ServiceType::all();
+		return View::make('services.create', ['service' => $service, 'serviceTypes' => $serviceTypes]);
 	}
 
 	/**

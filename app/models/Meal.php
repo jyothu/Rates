@@ -9,7 +9,7 @@ class Meal extends \Eloquent
 
     public function mealOptions()
     {
-        return $this->hasMany('Enchanting\MigrateTs\Models\MealOption');
+        return $this->hasMany('App\Models\MealOption');
 
     }
 }

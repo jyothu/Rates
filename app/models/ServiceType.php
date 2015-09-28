@@ -1,16 +1,16 @@
 <?php
 
-namespace Enchanting\MigrateTs\Models;
+namespace App\Models;
 
 class ServiceType extends \Eloquent
 {
     
-    protected $fillable = array('name', 'id');
+    protected $fillable = array('name', 'ts_id');
 
     public function services()
     {
 
-        return $this->hasMany('Enchanting\MigrateTs\Models\Service');
+        return $this->hasMany('App\Models\Service');
 
     }
 }
