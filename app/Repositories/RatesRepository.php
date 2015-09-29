@@ -107,6 +107,10 @@ class RatesRepository
             $respArray["GetServicesPricesAndAvailabilityResult"]["Services"]["PriceAndAvailabilityService"]["ServiceOptions"]["PriceAndAvailabilityResponseServiceOption"][] = $values;
         }
         
+        if (is_null($holder) || empty($holder)) {
+           $respArray["GetServicesPricesAndAvailabilityResult"]["Errors"] = json_decode(json_encode(['Error' => [ 'Description' => 'Service not found']]));
+        }
+
         return $respArray;
     }
 }
