@@ -2,6 +2,7 @@
 use App\Models\Service;
 use App\Models\ServiceType;
 use App\Models\Region;
+use App\Models\Currency;
 
 class ServiceController extends \BaseController {
 
@@ -25,11 +26,13 @@ class ServiceController extends \BaseController {
 	 */
 	public function create()
 	{
-		$service = new Service();
-		$serviceTypes = ServiceType::select('id','name')->get();
-		// $regions = Region::all();
-		// $serviceTypes = ServiceType::all();
-		return View::make('services.create', ['service' => $service, 'serviceTypes' => $serviceTypes]);
+		$locals = array(
+			'service' => new Service(),
+			'serviceTypes' => ServiceType::lists('name', 'id'),
+			'currencies' => Currency::lists('code', 'id'),
+			'regions' => Region::lists('name', 'id')
+		);
+		return View::make('services.create', $locals);
 	}
 
 	/**
