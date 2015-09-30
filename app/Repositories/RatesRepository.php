@@ -116,16 +116,18 @@ class RatesRepository
             $respArray["GetServicesPricesAndAvailabilityResult"]["Services"]["PriceAndAvailabilityService"]["ServiceOptions"]["PriceAndAvailabilityResponseServiceOption"][] = $values;
         }
         
-        foreach ($pricesAvailability as $optionName=>$priceValue) {
-            foreach ($respArray["GetServicesPricesAndAvailabilityResult"]["Services"]["PriceAndAvailabilityService"]["ServiceOptions"]["PriceAndAvailabilityResponseServiceOption"] as $key=>$priceOption) {
-                if ($priceOption["ServiceOptionName"] == $optionName) {
-                    $respArray["GetServicesPricesAndAvailabilityResult"]["Services"]["PriceAndAvailabilityService"]["ServiceOptions"]["PriceAndAvailabilityResponseServiceOption"][$key]["Prices"]["PriceAndAvailabilityResponsePricing"] = $priceValue;
+        if (is_null($holder) || empty($holder)) {
+        
+           $respArray["GetServicesPricesAndAvailabilityResult"]["Errors"] = json_decode(json_encode(['Error' => [ 'Description' => 'Service not found']]));
+        
+        } else {
+            foreach ($pricesAvailability as $optionName=>$priceValue) {
+                foreach ($respArray["GetServicesPricesAndAvailabilityResult"]["Services"]["PriceAndAvailabilityService"]["ServiceOptions"]["PriceAndAvailabilityResponseServiceOption"] as $key=>$priceOption) {
+                    if ($priceOption["ServiceOptionName"] == $optionName) {
+                        $respArray["GetServicesPricesAndAvailabilityResult"]["Services"]["PriceAndAvailabilityService"]["ServiceOptions"]["PriceAndAvailabilityResponseServiceOption"][$key]["Prices"]["PriceAndAvailabilityResponsePricing"] = $priceValue;
+                    }
                 }
             }
-        }
-        
-        if (is_null($holder) || empty($holder)) {
-           $respArray["GetServicesPricesAndAvailabilityResult"]["Errors"] = json_decode(json_encode(['Error' => [ 'Description' => 'Service not found']]));
         }
 
         return $respArray;
