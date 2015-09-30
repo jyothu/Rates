@@ -30,7 +30,7 @@ class RatesRepository
 
     public function getAllServiceRate($serviceId, $startDate, $endDate)
     {
-        return DB::select("select buy_price, sell_price, season_period_id, start, end, priceable_id as option_id, service_options.name as option_name, occ.name as occupancy_name, occ.id as occupancy_id, max_adults, max_children from prices join service_options on (prices.priceable_id = service_options.id) join season_periods on (prices.season_period_id=season_periods.id) join occupancies occ on (service_options.occupancy_id=occ.id) where priceable_id IN (select id from service_options where service_id=?) AND season_period_id IN (select id from season_periods where  start<=? AND end>=? OR start<=? AND end>=?) and service_options.status=?", [$serviceId, $startDate, $startDate, $endDate, $endDate, 1]);
+        return DB::select("select buy_price, sell_price, season_period_id, start, end, priceable_id as option_id, service_options.name as option_name, occ.name as occupancy_name, occ.id as occupancy_id, max_adults, max_children, meals.id as meal_id, meals.name as meal_name from prices join service_options on (prices.priceable_id = service_options.id) join meal_options on (meal_options.service_option_id = service_options.id) join meals on (meal_options.meal_id = meals.id) join season_periods on (prices.season_period_id=season_periods.id) join occupancies occ on (service_options.occupancy_id=occ.id) where priceable_id IN (select id from service_options where service_id=?) AND season_period_id IN (select id from season_periods where  start<=? AND end>=? OR start<=? AND end>=?) and service_options.status=?", [$serviceId, $startDate, $startDate, $endDate, $endDate, 1]);
     }
 
     public function getService($serviceId)
@@ -59,10 +59,15 @@ class RatesRepository
         }
         foreach ($holder as $key => $options) {
             $totalBuyingPrice = $totalSellingPrice = 0;
+
             if (count($options['seasons']) == 1) {
+                $option = $options['seasons'][0];
                 $nights = Carbon::parse($endDate)->diffInDays(Carbon::parse($startDate));
-                $totalBuyingPrice = ($options['seasons'][0]->buy_price)*($nights);
-                $totalSellingPrice = ($options['seasons'][0]->sell_price)*($nights);
+                $mealPlan = ["MealPlanID" => $option->meal_id, "MealPlanName" =>$option->meal_name];
+                $totalBuyingPrice = ($option->buy_price)*($nights);
+                $totalSellingPrice = ($option->sell_price)*($nights);
+                $prices = ["BuyPrice" => $option->buy_price, "SellPrice" => $option->sell_price, "MealPlan" => $mealPlan];
+                $pricesAvailability[$option->option_name][] = $prices;
             
             } else {
                 $totalBuyingPrice = $totalSellingPrice = 0;
@@ -73,12 +78,15 @@ class RatesRepository
                     
                     foreach ($period as $date) {
                         if (Carbon::parse($date->format('Y-m-d'))->between($carbonStartDate, $carbonEndDate)) {
+                            $mealPlan = ["MealPlanID" => $option->meal_id, "MealPlanName" =>$option->meal_name];
                             $totalBuyingPrice += $option->buy_price;
                             $totalSellingPrice += $option->sell_price;
+                            $prices = ["BuyPrice" => $option->buy_price, "SellPrice" => $option->sell_price, "MealPlan" => $mealPlan];
+                            $pricesAvailability[$option->option_name][] = $prices;
                         }
                     }
                 }
-            } 
+            }
             $holder[$key]['occupancy_name'] = $options['seasons'][0]->occupancy_name;
             $holder[$key]['occupancy_id'] = $options['seasons'][0]->occupancy_id;
             $holder[$key]['max_adults'] = $options['seasons'][0]->max_adults;
@@ -95,6 +103,7 @@ class RatesRepository
         $respArray["GetServicesPricesAndAvailabilityResult"]["Services"]["PriceAndAvailabilityService"]["ServiceCode"] = $serviceId;
         
         foreach ($holder as $key => $value) {
+
             $values = array("MaxChild" => $value["max_children"],
                 "MaxAdult" =>  $value["max_adults"],
                 "Occupancy" => $value["occupancy_id"],
@@ -105,6 +114,14 @@ class RatesRepository
                 "ServiceOptionName" => $value["option_name"]
             );
             $respArray["GetServicesPricesAndAvailabilityResult"]["Services"]["PriceAndAvailabilityService"]["ServiceOptions"]["PriceAndAvailabilityResponseServiceOption"][] = $values;
+        }
+        
+        foreach ($pricesAvailability as $optionName=>$priceValue) {
+            foreach ($respArray["GetServicesPricesAndAvailabilityResult"]["Services"]["PriceAndAvailabilityService"]["ServiceOptions"]["PriceAndAvailabilityResponseServiceOption"] as $key=>$priceOption) {
+                if ($priceOption["ServiceOptionName"] == $optionName) {
+                    $respArray["GetServicesPricesAndAvailabilityResult"]["Services"]["PriceAndAvailabilityService"]["ServiceOptions"]["PriceAndAvailabilityResponseServiceOption"][$key]["Prices"]["PriceAndAvailabilityResponsePricing"] = $priceValue;
+                }
+            }
         }
         
         if (is_null($holder) || empty($holder)) {
