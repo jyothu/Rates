@@ -4,7 +4,7 @@ namespace App\Models;
 
 class Policy extends \Illuminate\Database\Eloquent\Model {
 
-	protected $fillable = array('ts_id', 'name', 'status');
+	protected $fillable = array('ts_id', 'name', 'charging_duration', 'day_duration', 'room_based', 'day_overlap', 'capacity', 'status');
 
 }
 

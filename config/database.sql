@@ -1,7 +1,12 @@
 CREATE TABLE `policies` (
   `id` bigint(12) NOT NULL AUTO_INCREMENT,
-  `ts_id` bigint(12) NOT NULL,
+  `ts_id` bigint(12) NOT NULL UNIQUE,
   `name` varchar(255) NOT NULL UNIQUE,
+  `charging_duration` varchar(255),
+  `day_duration` varchar(255),
+  `room_based` boolean,
+  `day_overlap` boolean,
+  `capacity` varchar(255),
   `status` tinyint(1) DEFAULT 1,
   `created_at` datetime DEFAULT NULL,
   `updated_at` datetime DEFAULT NULL,
