@@ -79,7 +79,7 @@ foreach($csv as $row) {
     
     // Find or Create Policies
     $policyParams = array('ts_id' => $policyId, 'name' => $policyName);
-    Models\Policy::firstOrCreate( $policyParams );
+    $policyObj = Models\Policy::firstOrCreate( $policyParams );
 
     // Find or Create Contracts
     $contractObj = $serviceObj->contracts()->firstOrCreate(array('ts_id' => $contractId, 'name' => $contractName));
@@ -101,7 +101,7 @@ foreach($csv as $row) {
     // Find Or Create Service Option
     $optionObj = null;
     if ($optionId) {
-		$serviceOptionParams = array('occupancy_id' => $occupancyObj->id, 'name' => $optionName, 'ts_id' => $optionId, 'status' => $optionStatus);
+		$serviceOptionParams = array('occupancy_id' => $occupancyObj->id, 'name' => $optionName, 'ts_id' => $optionId, 'status' => $optionStatus, 'policy_id' => $policyObj->id);
 	    $optionObj = $serviceObj->serviceOptions()->firstOrCreate( $serviceOptionParams );
         
         // Find or Create Meal Option

@@ -128,6 +128,7 @@ CREATE TABLE `service_options` (
   `ts_id` bigint(12) NOT NULL,
   `service_id` bigint(12) NOT NULL,
   `occupancy_id` bigint(12) NOT NULL,
+  `policy_id` bigint(12) NOT NULL,
   `name` varchar(255) NOT NULL,
   `service_extra_id` bigint(12) NULL,
   `status` tinyint(1) DEFAULT 1,
@@ -135,6 +136,7 @@ CREATE TABLE `service_options` (
   `updated_at` datetime DEFAULT NULL,
   PRIMARY KEY (`id`),
   FOREIGN KEY (`service_id`) REFERENCES services(`id`),
+  FOREIGN KEY (`policy_id`) REFERENCES policies(`id`),
   FOREIGN KEY (`service_extra_id`) REFERENCES service_extras(`id`),
   FOREIGN KEY (`occupancy_id`) REFERENCES occupancies(`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
