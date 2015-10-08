@@ -2,6 +2,7 @@
 namespace App\Repositories;
 
 use App\Models\Service;
+use App\Models\ServiceOption;
 use App\Models\Price;
 use DB;
 use Carbon\Carbon;
@@ -28,12 +29,12 @@ class RatesRepository
         return DB::select("select buy_price,sell_price,season_period_id,start,end from prices join season_periods on (prices.season_period_id=season_periods.id) where priceable_id=? AND season_period_id IN (select id from season_periods where start<=? AND end>=? OR start<=? AND end>=?)", [$serviceOptionId, $startDate, $startDate, $endDate, $endDate]);
     }
 
-    public function getAllServiceRate($serviceId, $startDate, $endDate)
+    public function serviceOptionsAndRates($serviceId, $startDate, $endDate)
     {
-        return DB::select("select buy_price, sell_price, season_period_id, start, end, priceable_id as option_id, service_options.name as option_name, occ.name as occupancy_name, occ.id as occupancy_id, max_adults, max_children, meals.id as meal_id, meals.name as meal_name from prices join service_options on (prices.priceable_id = service_options.id) join meal_options on (meal_options.service_option_id = service_options.id) join meals on (meal_options.meal_id = meals.id) join season_periods on (prices.season_period_id=season_periods.id) join occupancies occ on (service_options.occupancy_id=occ.id) where priceable_id IN (select id from service_options where service_id=?) AND season_period_id IN (select id from season_periods where  start<=? AND end>=? OR start<=? AND end>=?) and service_options.status=?", [$serviceId, $startDate, $startDate, $endDate, $endDate, 1]);
+        return DB::select("select buy_price, sell_price, season_period_id, start, end, priceable_id as option_id, service_options.name as option_name, occ.name as occupancy_name, occ.id as occupancy_id, max_adults, max_children, meals.id as meal_id, meals.name as meal_name from prices join service_options on (prices.priceable_id = service_options.id) join meal_options on (meal_options.service_option_id = service_options.id) join meals on (meal_options.meal_id = meals.id) join season_periods on (prices.season_period_id=season_periods.id) join occupancies occ on (service_options.occupancy_id=occ.id) where priceable_id IN (select id from service_options where service_id=?) AND priceable_type LIKE '%ServiceOption' AND season_period_id IN (select id from season_periods where  start<=? AND end>=? OR start<=? AND end>=?) and service_options.status=?", [$serviceId, $startDate, $startDate, $endDate, $endDate, 1]);  
     }
 
-    public function getService($serviceId)
+    public function getServiceWithCurrency($serviceId)
     {
        return Service::with('currency')->find( $serviceId );
     }
@@ -57,22 +58,21 @@ class RatesRepository
     public function calculateTotalServiceRate($serviceId, $startDate, $endDate, $currency, $quantity, $totalNights)
     {        
 
-        $service = $this->getService( $serviceId );
+        $service = $this->getServiceWithCurrency($serviceId);
         $exchangeRate = $this->exchangeRateRepository->exchangeRate($service->currency->code, $currency);
         $carbonEnd = Carbon::parse($endDate);
         $actualEnd = $carbonEnd->subDay()->format('Y-m-d');
-
-        $prices = $this->getAllServiceRate($serviceId, $startDate, $actualEnd);
-        
+        $serviceOptions = $this->serviceOptionsAndRates($serviceId, $startDate, $actualEnd);
+      
         $respArray["GetServicesPricesAndAvailabilityResult"]["Services"]["PriceAndAvailabilityService"]["ServiceID"] = $service->ts_id;
         $respArray["GetServicesPricesAndAvailabilityResult"]["Services"]["PriceAndAvailabilityService"]["ServiceCode"] = $serviceId;
         $respArray["GetServicesPricesAndAvailabilityResult"]["Warnings"] = (object) array();
         
-        if (empty($prices) || is_null($prices)){
+        if (empty($serviceOptions) || is_null($serviceOptions)) {
             $respArray["GetServicesPricesAndAvailabilityResult"]["Errors"] = json_decode(json_encode(['Error' => [ 'Description' => 'Service not found']]));
         } else {
             $respArray["GetServicesPricesAndAvailabilityResult"]["Errors"] = (object) array();
-            foreach ($prices as $key=>$price) {
+            foreach ($serviceOptions as $key=>$price) {
                 if (!isset($totalBuyingPrice[$price->option_id])){
                     $totalBuyingPrice[$price->option_id] = $totalSellingPrice[$price->option_id] = 0;
                 }
