@@ -27,7 +27,7 @@ class TravelStudioService
     {
         return $this->soapClient()->$funcName($params);
     }
-
+    
     public function tsExchangeRates()
     {
         return $this->soapClient()->GetExchangeRates();

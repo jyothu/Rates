@@ -28,4 +28,17 @@ class ApiService
             return $data;
         }
     }
+
+    function collectExtraPrices( $serviceTsId, $startDate, $endDate, $currency, $quantity)
+    {
+        $this->isRatesAvailableLocally = false;
+        $service = $this->ratesRepository->getServiceByTsId($serviceTsId); 
+        if ($service !== null) {
+            $startDate = Carbon::parse($startDate)->format('Y-m-d');
+            $endDate = Carbon::parse($endDate)->format('Y-m-d');
+            $data = $this->ratesRepository->calculateServiceExtraRate($service->id, $startDate, $endDate, $currency, $service->currency->code, $quantity);
+            $this->isRatesAvailableLocally = true;
+            return $data;
+        }
+    }
 }

@@ -21,7 +21,7 @@ class RatesRepository
 
     public function getServiceByTsId($serviceTsId)
     {
-        return Service::where('ts_id', $serviceTsId)->first();
+        return Service::with('currency')->where('ts_id', $serviceTsId)->first();
     }
 
     public function getServiceRate($serviceOptionId, $startDate, $endDate)
@@ -32,6 +32,11 @@ class RatesRepository
     public function serviceOptionsAndRates($serviceId, $startDate, $endDate)
     {
         return DB::select("select buy_price, sell_price, season_period_id, start, end, priceable_id as option_id, service_options.name as option_name, occ.name as occupancy_name, occ.id as occupancy_id, max_adults, max_children, meals.id as meal_id, meals.name as meal_name from prices join service_options on (prices.priceable_id = service_options.id) join meal_options on (meal_options.service_option_id = service_options.id) join meals on (meal_options.meal_id = meals.id) join season_periods on (prices.season_period_id=season_periods.id) join occupancies occ on (service_options.occupancy_id=occ.id) where priceable_id IN (select id from service_options where service_id=?) AND priceable_type LIKE '%ServiceOption' AND season_period_id IN (select id from season_periods where  start<=? AND end>=? OR start<=? AND end>=?) and service_options.status=?", [$serviceId, $startDate, $startDate, $endDate, $endDate, 1]);  
+    }
+
+    public function serviceExtrasAndRates($serviceId, $startDate, $endDate)
+    {
+        return DB::select("select buy_price, sell_price, season_period_id, start, end, priceable_id as extra_id, service_extras.ts_id as extra_ts_id from prices join service_extras on (prices.priceable_id = service_extras.id AND priceable_type LIKE '%ServiceExtra') join season_periods on (prices.season_period_id=season_periods.id) AND prices.service_id=? AND season_period_id IN (select id from season_periods where  start<=? AND end>=? OR start<=? AND end>=?) and service_extras.status=?", [$serviceId, $startDate, $startDate, $endDate, $endDate, 1]);
     }
 
     public function getServiceWithCurrency($serviceId)
@@ -69,7 +74,7 @@ class RatesRepository
         $respArray["GetServicesPricesAndAvailabilityResult"]["Warnings"] = (object) array();
         
         if (empty($serviceOptions) || is_null($serviceOptions)) {
-            $respArray["GetServicesPricesAndAvailabilityResult"]["Errors"] = json_decode(json_encode(['Error' => [ 'Description' => 'Service not found']]));
+            $respArray["GetServicesPricesAndAvailabilityResult"]["Errors"] = json_decode(json_encode(['Error' => [ 'Description' => 'Service not found']]   ));
         } else {
             $respArray["GetServicesPricesAndAvailabilityResult"]["Errors"] = (object) array();
             foreach ($serviceOptions as $key=>$price) {
@@ -97,5 +102,21 @@ class RatesRepository
         }
 
         return $respArray;
+    }
+
+
+    function calculateServiceExtraRate($serviceId, $startDate, $endDate, $fromCurrency, $toCurrency, $quantity)
+    {
+
+        $exchangeRate = $this->exchangeRateRepository->exchangeRate($fromCurrency, $toCurrency);
+        $carbonEnd = Carbon::parse($endDate);
+        $actualEnd = $carbonEnd->subDay()->format('Y-m-d');
+        echo "Stat: ".$startDate;
+        echo "\nEnd: ".$endDate;
+        echo "\nActual End: ".$actualEnd;
+        echo "\nService: ".$serviceId;
+
+        $serviceExtras = $this->serviceExtrasAndRates($serviceId, $startDate, $actualEnd);
+        dd($serviceExtras);
     }
 }
