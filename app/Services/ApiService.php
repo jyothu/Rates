@@ -36,7 +36,7 @@ class ApiService
         if ($service !== null) {
             $startDate = Carbon::parse($startDate)->format('Y-m-d');
             $endDate = Carbon::parse($endDate)->format('Y-m-d');
-            $data = $this->ratesRepository->calculateServiceExtraRate($service->id, $startDate, $endDate, $currency, $service->currency->code, $quantity);
+            $data = $this->ratesRepository->calculateServiceExtraRate($service, $startDate, $endDate, $currency, $quantity);
             $this->isRatesAvailableLocally = true;
             return $data;
         }

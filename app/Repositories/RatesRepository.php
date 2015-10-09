@@ -36,7 +36,7 @@ class RatesRepository
 
     public function serviceExtrasAndRates($serviceId, $startDate, $endDate)
     {
-        return DB::select("select buy_price, sell_price, season_period_id, start, end, priceable_id as extra_id, service_extras.ts_id as extra_ts_id from prices join service_extras on (prices.priceable_id = service_extras.id AND priceable_type LIKE '%ServiceExtra') join season_periods on (prices.season_period_id=season_periods.id) AND prices.service_id=? AND season_period_id IN (select id from season_periods where  start<=? AND end>=? OR start<=? AND end>=?) and service_extras.status=?", [$serviceId, $startDate, $startDate, $endDate, $endDate, 1]);
+        return DB::select("select buy_price, sell_price, service_extras.name as name, season_period_id, start, end, priceable_id as extra_id, prices.id as price_id, policies.name as policy_name, service_extras.ts_id as extra_ts_id from prices join service_extras on (prices.priceable_id = service_extras.id AND priceable_type LIKE '%ServiceExtra') join policies ON (service_extras.policy_id=policies.id) join season_periods on (prices.season_period_id=season_periods.id) AND prices.service_id=? AND season_period_id IN (select id from season_periods where  start<=? AND end>=? OR start<=? AND end>=?) and service_extras.status=?", [$serviceId, $startDate, $startDate, $endDate, $endDate, 1]);
     }
 
     public function getServiceWithCurrency($serviceId)
@@ -105,18 +105,60 @@ class RatesRepository
     }
 
 
-    function calculateServiceExtraRate($serviceId, $startDate, $endDate, $fromCurrency, $toCurrency, $quantity)
+    function calculateServiceExtraRate($service, $startDate, $endDate, $toCurrency, $quantity)
     {
-
-        $exchangeRate = $this->exchangeRateRepository->exchangeRate($fromCurrency, $toCurrency);
+        $exchangeRate = $this->exchangeRateRepository->exchangeRate($service->currency->code, $toCurrency);
         $carbonEnd = Carbon::parse($endDate);
+        $nights = $carbonEnd->diffInDays(Carbon::parse($startDate));
         $actualEnd = $carbonEnd->subDay()->format('Y-m-d');
-        echo "Stat: ".$startDate;
-        echo "\nEnd: ".$endDate;
-        echo "\nActual End: ".$actualEnd;
-        echo "\nService: ".$serviceId;
 
-        $serviceExtras = $this->serviceExtrasAndRates($serviceId, $startDate, $actualEnd);
-        dd($serviceExtras);
+        $serviceExtras = $this->serviceExtrasAndRates($service->id, $startDate, $actualEnd);
+        if (empty($serviceExtras) || is_null($serviceExtras)) {
+            $responseValue = array(
+               "Errors" => (object) array(), 
+               "ServiceId" => 0, 
+               "ServiceCode" => 0, 
+               "ServiceName" => 0, 
+               "ServiceTypeId" => 0,
+               "ResponseList" => (object) array()
+            );
+            $respArray["ServiceExtrasAndPricesResponse"] = $responseValue;
+        } else {
+            $responseValue = array(
+               "Errors" => (object) array(), 
+               "ServiceId" => $service->ts_id, 
+               "ServiceCode" => $service->id, 
+               "ServiceName" => $service->name, 
+               "ServiceTypeId" => $service->service_type_id
+            );
+            $respArray["ServiceExtrasAndPricesResponse"] = $responseValue;
+
+            foreach ($serviceExtras as $key => $extra) {
+                $value = array( 
+                    "ExtraMandatory" => false, 
+                    "OccupancyTypeID" => 0, 
+                    "ServiceTypeTypeID" => 1, 
+                    "ServiceTypeTypeName" => "Others", 
+                    "MaxAdults" => 100, 
+                    "MaxChild" => 0, 
+                    "MinAdults" => 0, 
+                    "MinChild" => 0, 
+                    "ChildMaxAge" => 0, 
+                    "ServiceExtraId" => $extra->extra_ts_id, 
+                    "ServiceExtraCode" => $extra->extra_id, 
+                    "ServiceTypeExtraName" => $extra->name,
+                    "TOTALPRICE" => ceil($extra->sell_price*$exchangeRate*$nights)
+                    );
+                $respArray["ServiceExtrasAndPricesResponse"]["ResponseList"]["ServiceExtras"][] = $value;
+                $price = array(
+                    "PriceId" => $extra->price_id, "PriceDate" => $extra->start, "CurrencyIsoCode" => $toCurrency,
+                    "PriceAmount" => $extra->sell_price*$exchangeRate, "BuyPrice" => $extra->buy_price*$exchangeRate,
+                    "ChargingPolicyName" => $extra->policy_name
+                    );
+                $respArray["ServiceExtrasAndPricesResponse"]["ResponseList"]["ServiceExtras"][$key]["ExtraPrices"]["ServiceExtraPrice"] = $price;
+            }
+        }
+
+        return $respArray;
     }
 }
