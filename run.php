@@ -80,7 +80,7 @@ foreach($csv as $row) {
     // Find or Create Policies
     $policyParams = array('ts_id' => $policyId, 'name' => $policyName);
     $policyObj = Models\Policy::firstOrCreate( $policyParams );
-
+    
     // Find or Create Contracts
     $contractObj = $serviceObj->contracts()->firstOrCreate(array('ts_id' => $contractId, 'name' => $contractName));
     $contractPeriodParams = array( 'ts_id' => $contractPeriodId, 'name' => $contractPeriodName, 'start' =>  date("Y/m/d", strtotime($contractStart)), 'end' => date("Y/m/d", strtotime($contractEnd)) );
@@ -94,7 +94,7 @@ foreach($csv as $row) {
     // Find or Create Service Extras
     $extraObj = null;
     if ($extraId) {
-	    $extraParams = array('name' => $extraName, 'ts_id' => $extraId);
+	    $extraParams = array('name' => $extraName, 'ts_id' => $extraId, 'policy_id' => $policyObj->id);
 	    $extraObj = $serviceObj->serviceExtras()->firstOrCreate( $extraParams );
     }
 
@@ -115,16 +115,11 @@ foreach($csv as $row) {
         'service_id' => $serviceObj->id
     );
 
-    // if ($extraObj) {
-    // 	$extraObj->prices()->firstOrCreate( $priceParams );
-    // } elseif ($optionObj) {
-    // 	$optionObj->prices()->firstOrCreate( $priceParams );
-    // }
-    if ($optionObj) {
-        $optionObj->prices()->firstOrCreate( $priceParams );
+    if ($extraObj) {
+    	$extraObj->prices()->firstOrCreate( $priceParams );
+    } elseif ($optionObj) {
+    	$optionObj->prices()->firstOrCreate( $priceParams );
     }
-    
-
     
     echo "Service ".$serviceObj->id." / ".$serviceObj->name." has been created...\n";
 }

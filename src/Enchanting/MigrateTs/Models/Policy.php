@@ -12,6 +12,12 @@ class Policy extends \Illuminate\Database\Eloquent\Model {
         return $this->hasMany('App\Models\ServiceOption');
 
     }
+
+    public function serviceExtras(){
+
+        return $this->hasMany('App\Models\ServiceExtra');
+
+    }
     
 }
 

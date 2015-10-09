@@ -114,13 +114,15 @@ CREATE TABLE `service_extras` (
   `id` bigint(12) NOT NULL AUTO_INCREMENT,
   `ts_id` bigint(12) NOT NULL,
   `service_id` bigint(12) NOT NULL,
+  `policy_id` bigint(12) NOT NULL,
   `name` varchar(255) NOT NULL,
   `mandatory` boolean DEFAULT 0,
   `status` tinyint(1) DEFAULT 1,
   `created_at` datetime DEFAULT NULL,
   `updated_at` datetime DEFAULT NULL,
   PRIMARY KEY (`id`),
-  FOREIGN KEY (`service_id`) REFERENCES services(`id`)
+  FOREIGN KEY (`service_id`) REFERENCES services(`id`),
+  FOREIGN KEY (`policy_id`) REFERENCES policies(`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 CREATE TABLE `service_options` (
