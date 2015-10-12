@@ -60,17 +60,17 @@ class RatesRepository
         return ($totalNights > 1 && $nights == 0) ? $nights+1 : $nights;
     }   
 
-    public function calculateTotalServiceRate($serviceId, $startDate, $endDate, $currency, $quantity, $totalNights)
-    {        
+    public function calculateTotalServiceRate($service, $startDate, $toCurrency, $quantity, $totalNights)
+    {   
 
-        $service = $this->getServiceWithCurrency($serviceId);
-        $exchangeRate = $this->exchangeRateRepository->exchangeRate($service->currency->code, $currency);
-        $carbonEnd = Carbon::parse($endDate);
+        $exchangeRate = $this->exchangeRateRepository->exchangeRate($service->currency->code, $toCurrency);
+        $carbonEnd = Carbon::parse($startDate)->addDays($totalNights);
+        $endDate = $carbonEnd->format('Y-m-d');
         $actualEnd = $carbonEnd->subDay()->format('Y-m-d');
-        $serviceOptions = $this->serviceOptionsAndRates($serviceId, $startDate, $actualEnd);
+        $serviceOptions = $this->serviceOptionsAndRates($service->id, $startDate, $actualEnd);
       
         $respArray["GetServicesPricesAndAvailabilityResult"]["Services"]["PriceAndAvailabilityService"]["ServiceID"] = $service->ts_id;
-        $respArray["GetServicesPricesAndAvailabilityResult"]["Services"]["PriceAndAvailabilityService"]["ServiceCode"] = $serviceId;
+        $respArray["GetServicesPricesAndAvailabilityResult"]["Services"]["PriceAndAvailabilityService"]["ServiceCode"] = $service->id;
         $respArray["GetServicesPricesAndAvailabilityResult"]["Warnings"] = (object) array();
         
         if (empty($serviceOptions) || is_null($serviceOptions)) {
@@ -87,7 +87,7 @@ class RatesRepository
                 $totalSellingPrice[$price->option_id] += ($price->sell_price)*$nights;
 
                  $values = array("MaxChild" => $price->max_children, "MaxAdult" =>  $price->max_adults,
-                    "Occupancy" => $price->occupancy_id, "Currency" => $currency,
+                    "Occupancy" => $price->occupancy_id, "Currency" => $toCurrency,
                     "TotalSellingPrice" => ceil(($totalSellingPrice[$price->option_id])*$exchangeRate*$quantity),
                     "TotalBuyingPrice" => ceil(($totalBuyingPrice[$price->option_id])*$exchangeRate*$quantity),
                     "OptionID" => $price->option_id, "ServiceOptionName" => $price->option_name
@@ -107,12 +107,13 @@ class RatesRepository
 
     function calculateServiceExtraRate($service, $startDate, $endDate, $toCurrency, $quantity)
     {
+
         $exchangeRate = $this->exchangeRateRepository->exchangeRate($service->currency->code, $toCurrency);
         $carbonEnd = Carbon::parse($endDate);
         $nights = $carbonEnd->diffInDays(Carbon::parse($startDate));
         $actualEnd = $carbonEnd->subDay()->format('Y-m-d');
-
         $serviceExtras = $this->serviceExtrasAndRates($service->id, $startDate, $actualEnd);
+        
         if (empty($serviceExtras) || is_null($serviceExtras)) {
             $responseValue = array(
                "Errors" => (object) array(), 

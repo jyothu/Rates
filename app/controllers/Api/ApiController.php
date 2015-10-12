@@ -67,7 +67,7 @@ class ApiController extends BaseController
         }
     }
 
-    // public $requestData = array("IncomingRequest" => 
+    // public $extraRequest = array("IncomingRequest" => 
     //     array( "Authenticate" => 
     //         array("LICENSEKEY" => "A6C2FAAA-62D7-4A1B-9AB5-C6BF801E7803", "PASSENGERID" => "0", "Connector" => "enmTS"),
     //         "BOOKING_TYPE_ID" => 0 ,
@@ -89,9 +89,9 @@ class ApiController extends BaseController
 
     public function GetServiceExtraPrices()
     {
-        // $requestData = $this->requestData;
-        $requestData = json_decode(Input::get('data'), true);
-        $validator = Validator::make($requestData['IncomingRequest'], $this->serviceExtraRules);
+        // $extraRequest = $this->extraRequest;
+        $extraRequest = json_decode(Input::get('data'), true);
+        $validator = Validator::make($extraRequest['IncomingRequest'], $this->serviceExtraRules);
         
         if ($validator->fails()){
             foreach ($validator->errors()->all() as $key => $message) {
@@ -100,18 +100,17 @@ class ApiController extends BaseController
         }
         else 
         {   
-            $response = $this->apiService->collectExtraPrices($requestData['IncomingRequest']['SERVICEID'], $requestData['IncomingRequest']['FROMDATE'], $requestData['IncomingRequest']['TODATE'], $requestData["IncomingRequest"]["CURRENCYISOCODE"], $requestData['IncomingRequest']["ExtrasRequired"]["ExtraDetail"]["Quantity"]);
+            $response = $this->apiService->collectExtraPrices($extraRequest['IncomingRequest']['SERVICEID'], $extraRequest['IncomingRequest']['FROMDATE'], $extraRequest['IncomingRequest']['TODATE'], $extraRequest["IncomingRequest"]["CURRENCYISOCODE"], $extraRequest['IncomingRequest']["ExtrasRequired"]["ExtraDetail"]["Quantity"]);
             if( !$this->apiService->isRatesAvailableLocally )
             {
                 $funcName = __FUNCTION__;
-                $response = $this->tsService->pullRatesFromTravelStudio($funcName, $requestData);
+                $response = $this->tsService->pullRatesFromTravelStudio($funcName, $extraRequest);
             }
 
             if (isset($response)){
                 return Response::json($response, 200);
             }
         }
-        dd($response);
     }
 
     public function callFunction($funcName)
