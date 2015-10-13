@@ -32,8 +32,8 @@ foreach($csv as $row) {
 
     $pBrandParams = array('ts_id' => $tsId, 'name' => $name, 'min' => $min, 'max' => $max);
 
-    $obj = Models\PriceBrand::firstOrCreate($pBrandParams);
-    echo "\033[1m".$obj->name."\033[0m has been added to PriceBrand table\n";
+    $obj = Models\PriceBand::firstOrCreate($pBrandParams);
+    echo "\033[1m".$obj->name."\033[0m has been added to PriceBand table\n";
 }
 
 

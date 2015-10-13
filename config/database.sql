@@ -110,7 +110,7 @@ CREATE TABLE `charging_policies` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE `price_brands` (
+CREATE TABLE `price_bands` (
   `id` bigint(12) NOT NULL AUTO_INCREMENT,
   `ts_id` bigint(12) NOT NULL UNIQUE,
   `name` varchar(255) NOT NULL UNIQUE,
@@ -167,12 +167,12 @@ CREATE TABLE `service_policies` (
   FOREIGN KEY (`charging_policy_id`) REFERENCES charging_policies(`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE `service_price_brands` (
+CREATE TABLE `service_price_bands` (
   `id` bigint(12) NOT NULL AUTO_INCREMENT,
   `service_id` bigint(12) NOT NULL,
-  `brandable_id` bigint(12) NOT NULL,
-  `brandable_type` varchar(255) NOT NULL,
-  `price_brand_id` bigint(12) NOT NULL,
+  `bandable_id` bigint(12) NOT NULL,
+  `bandable_type` varchar(255) NOT NULL,
+  `price_band_id` bigint(12) NOT NULL,
   `season_period_id` bigint(12) NOT NULL,
   `status` tinyint(1) DEFAULT 1,
   `created_at` datetime DEFAULT NULL,
@@ -180,7 +180,7 @@ CREATE TABLE `service_price_brands` (
   PRIMARY KEY (`id`),
   FOREIGN KEY (`service_id`) REFERENCES services(`id`),
   FOREIGN KEY (`season_period_id`) REFERENCES season_periods(`id`),
-  FOREIGN KEY (`price_brand_id`) REFERENCES price_brands(`id`)
+  FOREIGN KEY (`price_band_id`) REFERENCES price_bands(`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 CREATE TABLE `meal_options` (
