@@ -121,7 +121,7 @@ foreach($csv as $row) {
         'service_id' => $serviceObj->id,
         'charging_policy_id' => $policyObj->id
         );
-    print_r($servicePolicyParams);
+
     if ($extraObj) {
     	$extraObj->prices()->firstOrCreate( $priceParams );
         $extraObj->servicePolicies()->firstOrCreate( $servicePolicyParams );

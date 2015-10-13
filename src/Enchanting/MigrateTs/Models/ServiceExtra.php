@@ -17,6 +17,12 @@ class ServiceExtra extends \Illuminate\Database\Eloquent\Model {
         
     }
 
+    public function servicePriceBrands(){
+
+        return $this->morphMany('App\Models\ServicePriceBrand', 'brandable');
+        
+    }
+    
     public function service(){
 
         return $this->belongsTo('App\Models\Service');

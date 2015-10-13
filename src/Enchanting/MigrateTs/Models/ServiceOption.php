@@ -18,6 +18,12 @@ class ServiceOption extends \Illuminate\Database\Eloquent\Model {
         
     }
 
+    public function servicePriceBrands(){
+
+        return $this->morphMany('App\Models\ServicePriceBrand', 'brandable');
+        
+    }
+
     public function mealOptions(){
 
         return $this->hasMany('App\Models\MealOption');

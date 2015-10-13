@@ -38,8 +38,6 @@ foreach($csv as $row) {
         'day_overlap' => $dayOverlap, 'capacity' => $capacity
     );
 
-    print_r($policyParams);
-
     $obj = Models\ChargingPolicy::firstOrCreate($policyParams);
     echo "\033[1m".$obj->name."\033[0m has been added to Policy table\n";
 }

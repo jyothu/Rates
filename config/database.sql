@@ -110,6 +110,18 @@ CREATE TABLE `charging_policies` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
+CREATE TABLE `price_brands` (
+  `id` bigint(12) NOT NULL AUTO_INCREMENT,
+  `ts_id` bigint(12) NOT NULL UNIQUE,
+  `name` varchar(255) NOT NULL UNIQUE,
+  `min` int(10) DEFAULT 0,
+  `max` int(10) DEFAULT NULL,
+  `status` tinyint(1) DEFAULT 1,
+  `created_at` datetime DEFAULT NULL,
+  `updated_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
 CREATE TABLE `service_extras` (
   `id` bigint(12) NOT NULL AUTO_INCREMENT,
   `ts_id` bigint(12) NOT NULL,
@@ -146,12 +158,29 @@ CREATE TABLE `service_policies` (
   `policiable_type` varchar(255) NOT NULL,
   `charging_policy_id` bigint(12) NOT NULL,
   `season_period_id` bigint(12) NOT NULL,
+  `status` tinyint(1) DEFAULT 1,
   `created_at` datetime DEFAULT NULL,
   `updated_at` datetime DEFAULT NULL,
   PRIMARY KEY (`id`),
   FOREIGN KEY (`service_id`) REFERENCES services(`id`),
   FOREIGN KEY (`season_period_id`) REFERENCES season_periods(`id`),
   FOREIGN KEY (`charging_policy_id`) REFERENCES charging_policies(`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE `service_price_brands` (
+  `id` bigint(12) NOT NULL AUTO_INCREMENT,
+  `service_id` bigint(12) NOT NULL,
+  `brandable_id` bigint(12) NOT NULL,
+  `brandable_type` varchar(255) NOT NULL,
+  `price_brand_id` bigint(12) NOT NULL,
+  `season_period_id` bigint(12) NOT NULL,
+  `status` tinyint(1) DEFAULT 1,
+  `created_at` datetime DEFAULT NULL,
+  `updated_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  FOREIGN KEY (`service_id`) REFERENCES services(`id`),
+  FOREIGN KEY (`season_period_id`) REFERENCES season_periods(`id`),
+  FOREIGN KEY (`price_brand_id`) REFERENCES price_brands(`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 CREATE TABLE `meal_options` (
