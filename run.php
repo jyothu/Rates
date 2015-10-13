@@ -15,9 +15,7 @@ $rows = array_map('str_getcsv', file( $argv[1] ));
 $header = array_shift($rows);
 $csv = array();
 foreach ($rows as $row) {
-
     $csv[] = array_combine($header, $row);
-
 }
 
 foreach($csv as $row) {
@@ -79,7 +77,7 @@ foreach($csv as $row) {
     
     // Find or Create Policies
     $policyParams = array('ts_id' => $policyId, 'name' => $policyName);
-    $policyObj = Models\Policy::firstOrCreate( $policyParams );
+    $policyObj = Models\ChargingPolicy::firstOrCreate( $policyParams );
     
     // Find or Create Contracts
     $contractObj = $serviceObj->contracts()->firstOrCreate(array('ts_id' => $contractId, 'name' => $contractName));
@@ -94,14 +92,18 @@ foreach($csv as $row) {
     // Find or Create Service Extras
     $extraObj = null;
     if ($extraId) {
-	    $extraParams = array('name' => $extraName, 'ts_id' => $extraId, 'policy_id' => $policyObj->id);
+	    $extraParams = array('name' => $extraName, 'ts_id' => $extraId);
 	    $extraObj = $serviceObj->serviceExtras()->firstOrCreate( $extraParams );
     }
 
     // Find Or Create Service Option
     $optionObj = null;
     if ($optionId) {
-		$serviceOptionParams = array('occupancy_id' => $occupancyObj->id, 'name' => $optionName, 'ts_id' => $optionId, 'status' => $optionStatus, 'policy_id' => $policyObj->id);
+		$serviceOptionParams = array('occupancy_id' => $occupancyObj->id,
+            'name' => $optionName,
+            'ts_id' => $optionId,
+            'status' => $optionStatus
+            );
 	    $optionObj = $serviceObj->serviceOptions()->firstOrCreate( $serviceOptionParams );
         
         // Find or Create Meal Option
@@ -113,12 +115,19 @@ foreach($csv as $row) {
         'buy_price' => $buyPrice,
         'sell_price' => $sellPrice,
         'service_id' => $serviceObj->id
-    );
+        );
 
+    $servicePolicyParams = array('season_period_id' => $seasonPeriodObj->id,
+        'service_id' => $serviceObj->id,
+        'charging_policy_id' => $policyObj->id
+        );
+    print_r($servicePolicyParams);
     if ($extraObj) {
     	$extraObj->prices()->firstOrCreate( $priceParams );
+        $extraObj->servicePolicies()->firstOrCreate( $servicePolicyParams );
     } elseif ($optionObj) {
     	$optionObj->prices()->firstOrCreate( $priceParams );
+        $optionObj->servicePolicies()->firstOrCreate( $servicePolicyParams );
     }
     
     echo "Service ".$serviceObj->id." / ".$serviceObj->name." has been created...\n";

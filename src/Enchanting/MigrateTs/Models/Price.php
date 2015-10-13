@@ -23,25 +23,6 @@ class Price extends \Illuminate\Database\Eloquent\Model {
 
     }
 
-    public static function bySeason( $start, $end ){
-
-      return static::join(
-        
-        'season_periods',
-        'prices.season_period_id', '=', 'season_periods.id'
-
-      )->where(function ($startQuery) use ($start) {
-      	
-      	$startQuery->where('start', '<=', $start)->where('end', '>=', $start);
-     
-      })->orWhere(function ($endQuery) use ($end) {
-      	
-      	$endQuery->where('start', '<=', $end)->where('end', '>=', $end);
-      
-      });
-    
-    }
-
 }
 
 ?>

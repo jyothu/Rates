@@ -40,7 +40,7 @@ foreach($csv as $row) {
 
     print_r($policyParams);
 
-    $obj = Models\Policy::firstOrCreate($policyParams);
+    $obj = Models\ChargingPolicy::firstOrCreate($policyParams);
     echo "\033[1m".$obj->name."\033[0m has been added to Policy table\n";
 }
 
