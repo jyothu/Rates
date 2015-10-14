@@ -76,9 +76,12 @@ foreach($csv as $row) {
     $serviceObj = Models\Service::firstOrCreate( $serviceParams );
     
     // Find or Create Policies
-    $policyParams = array('ts_id' => $policyId, 'name' => $policyName);
-    $policyObj = Models\ChargingPolicy::firstOrCreate( $policyParams );
-    
+    $policyObj = null;
+    if ($policyId) {
+        $policyParams = array('ts_id' => $policyId, 'name' => $policyName);
+        $policyObj = Models\ChargingPolicy::firstOrCreate( $policyParams );
+    }
+
     // Find or Create Contracts
     $contractObj = $serviceObj->contracts()->firstOrCreate(array('ts_id' => $contractId, 'name' => $contractName));
     $contractPeriodParams = array( 'ts_id' => $contractPeriodId, 'name' => $contractPeriodName, 'start' =>  date("Y/m/d", strtotime($contractStart)), 'end' => date("Y/m/d", strtotime($contractEnd)) );
@@ -117,19 +120,25 @@ foreach($csv as $row) {
         'service_id' => $serviceObj->id
         );
 
-    $servicePolicyParams = array('season_period_id' => $seasonPeriodObj->id,
-        'service_id' => $serviceObj->id,
-        'charging_policy_id' => $policyObj->id
-        );
-
+    $priceObj = null;
     if ($extraObj) {
-    	$extraObj->prices()->firstOrCreate( $priceParams );
-        $extraObj->servicePolicies()->firstOrCreate( $servicePolicyParams );
+    	$priceObj = $extraObj->prices()->firstOrCreate( $priceParams );
     } elseif ($optionObj) {
-    	$optionObj->prices()->firstOrCreate( $priceParams );
-        $optionObj->servicePolicies()->firstOrCreate( $servicePolicyParams );
+    	$priceObj = $optionObj->prices()->firstOrCreate( $priceParams );
     }
-    
+
+    // Find or Create Service Policies
+    if ($policyObj) {
+        $servicePolicyParams = array('charging_policy_id' => $policyObj->id);
+        $priceObj->servicePolicy()->firstOrCreate( $servicePolicyParams );
+    }
+
+    // Find or Create Service Policies
+    // if ($priceBandObj) {
+    //     $serviceBandParams = array('price_band_id' => $priceBandObj->id);
+    //     $priceObj->servicePriceBand()->firstOrCreate( $serviceBandParams );
+    // }
+
     echo "Service ".$serviceObj->id." / ".$serviceObj->name." has been created...\n";
 }
 

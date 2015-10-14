@@ -11,16 +11,20 @@ class Price extends \Illuminate\Database\Eloquent\Model {
         return $this->morphTo();
     }
     
+    public function servicePolicy() {
+        return $this->hasOne('App\Models\ServicePolicy');
+    }
+
+    public function servicePriceBand() {
+        return $this->hasOne('App\Models\ServicePriceBand');
+    }
+
     public function seasonPeriod(){
-
         return $this->belongsTo('App\Models\SeasonPeriod');
-
     }
 
     public function service(){
-
         return $this->belongsTo('App\Models\Service');
-
     }
 
 }

@@ -10,18 +10,6 @@ class ServiceExtra extends \Illuminate\Database\Eloquent\Model {
 
         return $this->morphMany('App\Models\Price', 'priceable');
     }
-
-    public function servicePolicies(){
-
-        return $this->morphMany('App\Models\ServicePolicy', 'policiable');
-        
-    }
-
-    public function servicePriceBrands(){
-
-        return $this->morphMany('App\Models\ServicePriceBrand', 'brandable');
-        
-    }
     
     public function service(){
 
