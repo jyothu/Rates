@@ -62,13 +62,12 @@ class RatesRepository
 
     public function calculateTotalServiceRate($service, $startDate, $toCurrency, $quantity, $totalNights)
     {   
-
         $exchangeRate = $this->exchangeRateRepository->exchangeRate($service->currency->code, $toCurrency);
         $carbonEnd = Carbon::parse($startDate)->addDays($totalNights);
         $endDate = $carbonEnd->format('Y-m-d');
         $actualEnd = $carbonEnd->subDay()->format('Y-m-d');
+        $startDate = Carbon::parse($startDate)->format('Y-m-d');
         $serviceOptions = $this->serviceOptionsAndRates($service->id, $startDate, $actualEnd);
-      
         $respArray["GetServicesPricesAndAvailabilityResult"]["Services"]["PriceAndAvailabilityService"]["ServiceID"] = $service->ts_id;
         $respArray["GetServicesPricesAndAvailabilityResult"]["Services"]["PriceAndAvailabilityService"]["ServiceCode"] = $service->id;
         $respArray["GetServicesPricesAndAvailabilityResult"]["Warnings"] = (object) array();
@@ -112,6 +111,7 @@ class RatesRepository
         $carbonEnd = Carbon::parse($endDate);
         $nights = $carbonEnd->diffInDays(Carbon::parse($startDate));
         $actualEnd = $carbonEnd->subDay()->format('Y-m-d');
+        $startDate = Carbon::parse($startDate)->format('Y-m-d');
         $serviceExtras = $this->serviceExtrasAndRates($service->id, $startDate, $actualEnd);
         
         if (empty($serviceExtras) || is_null($serviceExtras)) {
