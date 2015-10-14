@@ -10,7 +10,15 @@ class Price extends \Eloquent
     public function priceable(){
         return $this->morphTo();
     }
-    
+
+    public function servicePolicy() {
+        return $this->hasOne('App\Models\servicePolicy');
+    }
+
+    public function servicePriceBand() {
+        return $this->hasOne('App\Models\servicePriceBand');
+    }
+
     public function seasonPeriod(){
         return $this->belongsTo('App\Models\SeasonPeriod');
     }

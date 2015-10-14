@@ -11,27 +11,27 @@ class ServiceOption extends \Eloquent
         return $this->morphMany('App\Models\Price', 'priceable');
     }
 
-    public function serviceExtra(){
+    public function serviceExtra() {
         return $this->belongsTo('App\Models\ServiceExtra');
     }
 
-    public function meals(){
+    public function meals() {
         return $this->belongsToMany('App\Models\Meal', 'meal_options');
     }
 
-    public function mealOptions(){
+    public function mealOptions() {
         return $this->hasMany('App\Models\MealOption');
     }
 
-    public function occupancy(){
+    public function occupancy() {
         return $this->belongsTo('App\Models\Occupancy');
     }
 
-    public function service(){
+    public function service() {
         return $this->belongsTo('App\Models\Service');
     }
 
-    public function policy(){
+    public function policy() {
         return $this->belongsTo('App\Models\Policy');
     }
 
