@@ -5,7 +5,7 @@ namespace App\Models;
 class ServiceOption extends \Eloquent
 {
     
-    protected $fillable = array('ts_id', 'service_id', 'service_extra_id', 'policy_id', 'occupancy_id', 'name', 'status');
+    protected $fillable = array('ts_id', 'service_id', 'service_extra_id', 'occupancy_id', 'name', 'status');
 
     public function prices() {
         return $this->morphMany('App\Models\Price', 'priceable');
@@ -29,10 +29,6 @@ class ServiceOption extends \Eloquent
 
     public function service() {
         return $this->belongsTo('App\Models\Service');
-    }
-
-    public function policy() {
-        return $this->belongsTo('App\Models\Policy');
     }
 
 }
