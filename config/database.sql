@@ -174,6 +174,8 @@ CREATE TABLE `service_price_bands` (
   `bandable_type` varchar(255) NOT NULL,
   `price_band_id` bigint(12) NOT NULL,
   `season_period_id` bigint(12) NOT NULL,
+  `buy_price` DECIMAL(10, 2) NOT NULL,
+  `sell_price` DECIMAL(10, 2) NOT NULL,
   `status` tinyint(1) DEFAULT 1,
   `created_at` datetime DEFAULT NULL,
   `updated_at` datetime DEFAULT NULL,
