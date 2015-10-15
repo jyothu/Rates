@@ -277,7 +277,7 @@ class RatesRepository
             $i++;
             
         }
-       print_r($priceWithChargingPolicy);
+       //print_r($priceWithChargingPolicy);
         return $priceWithChargingPolicy; 
     }
     
