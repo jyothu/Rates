@@ -3,8 +3,7 @@
 namespace App\Models;
 
 class Region extends \Eloquent
-{
-    
+{    
     protected $fillable = array('name', 'ts_id', 'parent_id');
 
     public function services() {
