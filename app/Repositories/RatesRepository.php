@@ -68,7 +68,7 @@ class RatesRepository {
         //print_r($serviceOptions);
         // Charging Policy -  start
         if (self::WITH_CHARGING_POLICY == 1) {
-            $pricesBreakup = $this->getPriceBreakupWithSeasonsIdWithinStartandEndDate($service->id, $startDate, $endDate, $quantity, $totalNights);
+            $pricesBreakup = $this->getPriceBreakupWithSeasonsIdWithinStartandEndDate($service->id, $startDate, $endDate, $quantity, $totalNights, 'ServiceRate');
             $withChargingPolicyPrices = $pricesBreakup['finalPrice'];
         }
         // Charging Policy -  End
@@ -184,8 +184,11 @@ class RatesRepository {
                 );
                 $respArray["ServiceExtrasAndPricesResponse"]["ResponseList"]["ServiceExtras"][] = $value;
                 $price = array(
-                    "PriceId" => $extra->price_id, "PriceDate" => $extra->start, "CurrencyIsoCode" => $toCurrency,
-                    "PriceAmount" => $extra->sell_price * $exchangeRate, "BuyPrice" => $extra->buy_price * $exchangeRate,
+                    "PriceId" => $extra->price_id,
+                    "PriceDate" => $extra->start,
+                    "CurrencyIsoCode" => $toCurrency,
+                    "PriceAmount" => $extra->sell_price * $exchangeRate,
+                    "BuyPrice" => $extra->buy_price * $exchangeRate,
                     "ChargingPolicyName" => $extra->policy_name
                 );
                 $respArray["ServiceExtrasAndPricesResponse"]["ResponseList"]["ServiceExtras"][$key]["ExtraPrices"]["ServiceExtraPrice"] = $price;
@@ -212,7 +215,7 @@ class RatesRepository {
         }
     }
 
-    function getPriceBreakupWithSeasonsIdWithinStartandEndDate($serviceId, $startDate, $endDate, $quantity, $totalNights) {
+    function getPriceBreakupWithSeasonsIdWithinStartandEndDate($serviceId, $startDate, $endDate, $quantity, $totalNights, $apiCall = 'ServiceRate') {
 
         $serviceOptions = $this->serviceOptionsAndRates($serviceId, $startDate, $endDate);
 
@@ -262,7 +265,7 @@ class RatesRepository {
             $i++;
         }
 
-        return $priceWithChargingPolicy;
+        return isset($priceWithChargingPolicy) ? $priceWithChargingPolicy : false;
     }
 
     function getFinalRatesWithChargingPolicy($price, $charging_policy, $quantity, $nights, $charging_policy_criteria) {
@@ -296,6 +299,7 @@ class RatesRepository {
             $nquantity = ceil($quantity / $max);
             return $price * $nquantity;
         }
+        return $price;
     }
 
     function applyPriceBandChargingPolicy($withChargingPolicyPrices, $type, $option_id, $price) {
