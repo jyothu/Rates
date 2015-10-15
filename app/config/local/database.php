@@ -23,9 +23,9 @@ return array(
 		'mysql' => array(
 			'driver'    => 'mysql',
 			'host'      => 'localhost',
-			'database'  => 'rates',
-			'username'  => 'root',
-			'password'  => '',
+			'database'  => 'enChanting_Rates1',
+			'username'  => 'enChanting',
+			'password'  => 'enChantingP',
 			'charset'   => 'utf8',
 			'collation' => 'utf8_unicode_ci',
 			'prefix'    => '',
