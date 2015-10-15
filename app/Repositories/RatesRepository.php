@@ -86,11 +86,19 @@ class RatesRepository
         } else {
             $respArray["GetServicesPricesAndAvailabilityResult"]["Errors"] = (object) array();
             foreach ($serviceOptions as $key=>$price) {
-                
+                $price->policy_id = '';
+                $price->price_band_id = 1;
                 // Charging Policy -  Start
-                if(self::WITH_CHARGING_POLICY == 1) {
-                    $price->buy_price = $this->applyRatesChargingPolicy($withChargingPolicyPrices, 'buy_price', $price->option_id, $price->buy_price);
-                    $price->sell_price = $this->applyRatesChargingPolicy($withChargingPolicyPrices, 'sell_price', $price->option_id, $price->sell_price);
+                if(self::WITH_CHARGING_POLICY == 1 ) {
+                    if(!empty($price->policy_id)) {
+                        echo 'with policy id';
+                        $price->buy_price = $this->applyRatesChargingPolicy($withChargingPolicyPrices, 'buy_price', $price->option_id, $price->buy_price);
+                        $price->sell_price = $this->applyRatesChargingPolicy($withChargingPolicyPrices, 'sell_price', $price->option_id, $price->sell_price);
+                    } else if(!empty($price->price_band_id)) {
+//                        $price->buy_price = $this->applyPriceBandChargingPolicy($withChargingPolicyPrices, 'buy_price', $price->option_id, $price->buy_price);
+//                        $price->sell_price = $this->applyPriceBandChargingPolicy($withChargingPolicyPrices, 'sell_price', $price->option_id, $price->sell_price);
+                    }
+                    
                 }
                 // Charging Policy -  End
                 
@@ -223,11 +231,20 @@ class RatesRepository
         $i = 0;
         
          foreach ($serviceOptions as $key=>$price) {
-             
+                
              if(!isset($priceWithChargingPolicy['finalPrice']['buy_price'][$price->option_id])) $priceWithChargingPolicy['finalPrice']['buy_price'][$price->option_id] = 0; 
              if(!isset($priceWithChargingPolicy['finalPrice']['sell_price'][$price->option_id])) $priceWithChargingPolicy['finalPrice']['sell_price'][$price->option_id] = 0;              
             $nights = $this->getNightsCount($price->start, $price->end, $startDate, $endDate, $totalNights);  
-            $charging_policy = DB::select("select sp.id as service_policy_id, sp.charging_policy_id, cp.name as charging_policy_name, cp.charging_duration, cp.day_duration,cp.room_based from service_policies sp, charging_policies cp where sp.price_id = ? and sp.charging_policy_id = ? and  sp.charging_policy_id = cp.id", [$price->option_id,$price->policy_id]);
+            if(!empty($price->policy_id)) {
+                $charging_policy_criteria = 'charging_policy';
+                $charging_policy = DB::select("select sp.id as service_policy_id, sp.charging_policy_id, cp.name as charging_policy_name, cp.charging_duration, cp.day_duration,cp.room_based from service_policies sp, charging_policies cp where sp.price_id = ? and sp.charging_policy_id = ? and  sp.charging_policy_id = cp.id", [$price->option_id,$price->policy_id]);
+            } else if(!empty($price->price_band_id)) {
+                $charging_policy_criteria = 'price_band';
+                $charging_policy = DB::select("select id as price_band_id, name, min, max from price_bands where id = ? ", [$price->price_band_id]);
+            }   
+            
+            $buy_price = $this->getFinalRatesWithChargingPolicy($price->buy_price,$charging_policy, $quantity, $nights,$charging_policy_criteria);
+            $sell_price = $this->getFinalRatesWithChargingPolicy($price->sell_price,$charging_policy, $quantity, $nights, $charging_policy_criteria);
 
                         
             if(!isset($priceWithChargingPolicy[$price->season_name])) {
@@ -241,17 +258,16 @@ class RatesRepository
                 );
             }
             
-            $buy_price = $this->getFinalRatesWithChargingPolicy($price->buy_price,$charging_policy, $quantity, $nights);
-            $sell_price = $this->getFinalRatesWithChargingPolicy($price->sell_price,$charging_policy, $quantity, $nights);
+
             
             $priceWithChargingPolicy[$price->season_name]['options'][$i] = array(
                     'option_id' => $price->option_id,
                     'with_out_policy_buy_price' => $price->buy_price,
                     'with_out_policy_sell_price' => $price->sell_price,
-                    
+                    'charging_policy_criteria' => $charging_policy_criteria,
                     'charging_policy' => $charging_policy,
-                    'with_policy_buy_price' => $this->getFinalRatesWithChargingPolicy($price->buy_price,$charging_policy, $quantity, $nights),
-                    'with_policy_sell_price' => $this->getFinalRatesWithChargingPolicy($price->sell_price,$charging_policy, $quantity, $nights)
+                    'with_policy_buy_price' => $this->getFinalRatesWithChargingPolicy($price->buy_price,$charging_policy, $quantity, $nights, $charging_policy_criteria),
+                    'with_policy_sell_price' => $this->getFinalRatesWithChargingPolicy($price->sell_price,$charging_policy, $quantity, $nights, $charging_policy_criteria)
                     
                 ) ;
             
@@ -261,13 +277,14 @@ class RatesRepository
             $i++;
             
         }
-       
+       print_r($priceWithChargingPolicy);
         return $priceWithChargingPolicy; 
     }
     
-    function getFinalRatesWithChargingPolicy($price,$charging_policy,$quantity,$nights) {
+    function getFinalRatesWithChargingPolicy($price,$charging_policy,$quantity,$nights, $charging_policy_criteria) {
         
-        if(is_array($charging_policy) && isset($charging_policy[0])) {
+        if($charging_policy_criteria == 'charging_policy' && is_array($charging_policy) && isset($charging_policy[0])) {
+                       
             $charging_policy_name = strtolower($charging_policy[0]->charging_policy_name);        
             $is_charging_policy_room_based = strtolower($charging_policy[0]->room_based); // 1= yes
             $charging_policy_day_duration = strtolower($charging_policy[0]->day_duration); // 1= yes
@@ -277,23 +294,32 @@ class RatesRepository
                 if($charging_policy_day_duration == '1') {                
                     return $price*$nights;
                 } else if($charging_policy_day_duration > '0') {
-                    $nnights = $nights/$charging_policy_day_duration;                
+                    $nnights = ceil($nights/$charging_policy_day_duration);                
                     return $price*$nnights;
                 }       
             } else if($is_charging_policy_room_based == '0') {
                 if( $charging_policy_day_duration == '1') {
                     return ($price*$quantity*$nights);  
                 } else if($charging_policy_day_duration > '0') {                
-                    $nnights = $nights/$charging_policy_day_duration;                 
+                    $nnights = ceil($nights/$charging_policy_day_duration);                 
                     return $price*$quantity*$nnights;
                 }            
-            } else {
-                return $price;
-            }   
-        } else {
-            return $price;
-        } 
+            }         
+        } else if($charging_policy_criteria == 'price_band') {
+             $charging_policy_name = $charging_policy[0]->name;        
+             $min = $charging_policy[0]->min; 
+             $max = $charging_policy[0]->max;
+             $nquantity = ceil($quantity/$max);          
+             return $price*$nquantity;
+        }
         
+        
+        
+    }
+    //                        $price->buy_price = $this->applyPriceBandChargingPolicy($withChargingPolicyPrices, 'buy_price', $price->option_id, $price->buy_price);
+
+    function applyPriceBandChargingPolicy($withChargingPolicyPrices,$type,$option_id,$price){
+        return false;
     }
     // charging policy - end
 }
