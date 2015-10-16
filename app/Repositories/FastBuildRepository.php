@@ -28,7 +28,7 @@ class FastBuildRepository
 	
 	function createCity($params)
 	{
-        $tsId = $params["region_id"];
+        $tsId = $params["region_tsid"];
         $name = $params["region_name"];
         $parentId = $params["parent_region_id"];
 
@@ -52,7 +52,6 @@ class FastBuildRepository
 
         try
         {
-	        
 			$regionTsId = $params["region_tsid"];
 			$serviceTsId = $params["service_tsid"];
 			$serviceName = $params["service_name"];
