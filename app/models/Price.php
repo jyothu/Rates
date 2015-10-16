@@ -12,11 +12,11 @@ class Price extends \Eloquent
     }
 
     public function servicePolicy() {
-        return $this->hasOne('App\Models\servicePolicy');
+        return $this->hasOne('App\Models\ServicePolicy');
     }
 
     public function servicePriceBand() {
-        return $this->hasOne('App\Models\servicePriceBand');
+        return $this->hasOne('App\Models\ServicePriceBand');
     }
 
     public function seasonPeriod(){
