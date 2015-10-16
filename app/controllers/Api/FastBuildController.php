@@ -57,7 +57,7 @@ class FastBuildController extends BaseController
 
     public function createServiceOrCity()
     {
-        $requestData = json_decode(Input::get('data'), true);
+        $requestData = Input::all();
         // $validator = Validator::make($requestData['IncomingRequest'], $this->serviceRules);
         // $requestData = $this->requestData;
 
