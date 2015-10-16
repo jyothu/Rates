@@ -116,7 +116,7 @@ class ApiController extends BaseController
              "BOOKING_TYPE_ID" => 0 ,
              "PRICE_TYPE_ID" => 0,
              "PriceCode" => 0,
-             "SERVICEID" => 26666,
+             "SERVICEID" => 1210,
              "FROMDATE" => "2015-04-01",
              "TODATE" => "2015-04-02",
              "ReturnLinkedServiceOptions" => false,
@@ -132,8 +132,8 @@ class ApiController extends BaseController
 
     public function GetServiceExtraPrices()
     {
-        // $extraRequest = $this->extraRequest;
-        $extraRequest = json_decode(Input::get('data'), true);
+         $extraRequest = $this->extraRequest;
+        //$extraRequest = json_decode(Input::get('data'), true);
         $validator = Validator::make($extraRequest['IncomingRequest'], $this->serviceExtraRules);
         
         if ($validator->fails()){
