@@ -40,18 +40,18 @@ class ApiController extends BaseController
     
     // 26666 => 2015-01-09 - 2015-04-15  ==>    2015-04-16 - 2015-09-30
     
-    // 1359 => 11/05/2017 (05 Nov ) -  12 days
-    // 26666 => 04/08/2015 (8 April ) - 04/20/2015 (20th April) - 12 days
+    // 1359 => 11/05/2017 (05 Nov ) -  12 days/11 nights
+    // 26666 => 04/08/2015 (8 April ) - 04/19/2015 (19th April) - 12 days/11 nights
     // 
-    // 1475 => 01/11/2017 (11 Jan ) - 01/23/2017 (23th April) - 12 days
+    // 1475 => 01/11/2017 (11 Jan ) - 01/22/2017 (22th April) - 12 days/11 nights
     // 
-    // 1675 => 09/25/2015 (25 Sept ) - 10/07/2015 (7th Oct) - 12 days
-    // 1675 => 09/25/2016 (25 Sept ) - 10/07/2017 (7th Oct) - 12 days
+    // 1675 => 09/25/2015 (25 Sept ) - 10/06/2015 (6th Oct) - 12 days/11 nights
+    // 1675 => 09/25/2016 (25 Sept ) - 10/06/2017 (6th Oct) - 12 days/11 nights
     
     
     
     /*
-     * 04/08/2015 (8 April ) - 04/19/2015 (19th April) - 12 days
+     * 04/08/2015 (8 April ) - 04/19/2015 (19th April) - 12 days/11 nights
      * [season_period] => 2015-04-15 to 2015-09-29 (15 April to 29 Sept)
      * 
      * 
