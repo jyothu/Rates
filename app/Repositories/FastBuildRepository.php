@@ -32,7 +32,7 @@ class FastBuildRepository
         $name = $params["region_name"];
         $parentId = $params["parent_region_id"];
 
-        $parentObj = Region::find($parentId);
+        $parentObj = Region::where('ts_id', $parentId)->first();
         $regionParams = array('ts_id' => $tsId, 'name' => $name, 'parent_id' => ($parentObj ? $parentObj->id : 0));
         
         try {
