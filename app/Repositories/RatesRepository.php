@@ -65,10 +65,10 @@ class RatesRepository {
         $actualEnd = $carbonEnd->subDay()->format('Y-m-d');
         $startDate = Carbon::parse($startDate)->format('Y-m-d');
         $serviceOptions = $this->serviceOptionsAndRates($service->id, $startDate, $actualEnd);
-        //print_r($serviceOptions);
+        
         // Charging Policy -  start
         if (self::WITH_CHARGING_POLICY == 1) {
-            $pricesBreakup = $this->getPriceBreakupWithSeasonsIdWithinStartandEndDate($service->id, $startDate, $endDate, $quantity, $totalNights, 'ServiceRate');
+            $pricesBreakup = $this->getPriceBreakupWithSeasonsIdWithinStartandEndDate($service->id, $startDate, $actualEnd, $quantity, $totalNights, 'ServiceRate');
             $withChargingPolicyPrices = $pricesBreakup['finalPrice'];
         }
         // Charging Policy -  End
@@ -143,10 +143,10 @@ class RatesRepository {
         $actualEnd = $carbonEnd->subDay()->format('Y-m-d');
         $startDate = Carbon::parse($startDate)->format('Y-m-d');
         $serviceExtras = $this->serviceExtrasAndRates($service->id, $startDate, $actualEnd);
-               
+                     
         // Charging Policy -  start
         if (self::WITH_CHARGING_POLICY == 1) {
-            $pricesBreakup = $this->getPriceBreakupWithSeasonsIdWithinStartandEndDate($service->id, $startDate, $endDate, $quantity, $nights, 'ServiceExtra');
+            $pricesBreakup = $this->getPriceBreakupWithSeasonsIdWithinStartandEndDate($service->id, $startDate, $actualEnd, $quantity, $nights, 'ServiceExtra');
             $withChargingPolicyPrices = $pricesBreakup['finalPrice'];
         }
         // Charging Policy -  End
@@ -255,9 +255,8 @@ class RatesRepository {
     }
 
     function getPriceBreakupWithSeasonsIdWithinStartandEndDate($serviceId, $startDate, $endDate, $quantity, $totalNights, $apiCall = 'ServiceRate') {
-
-        if($apiCall == 'ServiceExtra') {
-            echo 'ServiceExtra';
+ 
+        if($apiCall == 'ServiceExtra') {            
             $serviceOptions = $this->serviceExtrasAndRates($serviceId, $startDate, $endDate);
         }  else {
             $serviceOptions = $this->serviceOptionsAndRates($serviceId, $startDate, $endDate);
@@ -270,12 +269,86 @@ class RatesRepository {
                 $price->option_id = $price->extra_id;
                 $price->option_name = $price->extra_name;
             } 
+           /* 
+            $startDate : 2017-01-11
+            $endDate : 2017-01-22
+            $actualEnd : 2017-01-21
+            $nights : 11
+
+
+            $startDate : 2017-01-11
+            $endDate : 2017-01-21
+            $totalNights : 11
+            * 
+                
+            Service Extras ->   "SERVICEID" => 1475,
+                                "FROMDATE" => "2017-01-11",
+                                "TODATE" => "2017-01-22",
             
+                [Season 03] => 2016-12-16 to 2017-01-15
+            
+Check IN     1 night = date  : 2017-01-11 (11 Jan) - day/night
+             2 night = date  : 2017-01-12 (12 Jan)
+             3 night = date  : 2017-01-13 (13 Jan)
+             4 night = date  : 2017-01-14 (14 Jan)
+             5 night = date  : 2017-01-15 (15 Jan)
+             
+            
+             
+                 [Season 04] => 2017-01-16 to 2017-02-28
+             
+             6 night = date  : 2017-01-16 (16 Jan)
+             7 night = date  : 2017-01-17 (17 Jan)
+             8 night = date  : 2017-01-18 (18 Jan)
+             9 night = date  : 2017-01-19 (19 Jan)
+             10 night = date : 2017-01-20 (20 Jan)
+             11 night = date : 2017-01-21 (21 Jan)
+Check Out    12       = date : 2017-01-22 (22 Jan)  - day     
+             
+            * 
+            * 
+            * 
+            * 
+            * 
+            *   start date 04/08/2015 (08 April) for 11 nights
+            
+            
+            Service Options -> 'SERVICEIDs' => '26666', 'START_DATE' => '04/07/2015'
+            [Season 02] => 2015-01-08 to 2015-04-14
+            
+Checkin      1 night = date  : 2015-04-08 (8 April) - day/night
+             2 night = date  : 2015-04-09 (9 April) - day/night
+             3 night = date  : 2015-04-10 (10 April) - day/night
+             4 night = date  : 2015-04-11 (11 April) - day/night
+             5 night = date  : 2015-04-12 (12 April) - day/night
+             6 night = date  : 2015-04-13 (13 April) - day/night
+             7 night = date  : 2015-04-14 (14 April) - day/night
+             
+             
+             
+             
+             
+                [Season 01] => 2015-04-15 to 2015-09-29
+
+             8 night = date  : 2015-04-15 (15 April) - day/night
+             9 night = date  : 2015-04-16 (16 April) - day/night
+             10 night = date : 2015-04-17 (17 April) - day/night
+             11 night = date : 2015-04-18 (18 April) - day/night
+Checkout              = date : 2015-04-19 (19 April) - day
+            * 
+            
+                */
+            
+            
+            
+     
             if (!isset($priceWithChargingPolicy['finalPrice']['buy_price'][$price->option_id]))
             $priceWithChargingPolicy['finalPrice']['buy_price'][$price->option_id] = 0;
             if (!isset($priceWithChargingPolicy['finalPrice']['sell_price'][$price->option_id]))
             $priceWithChargingPolicy['finalPrice']['sell_price'][$price->option_id] = 0;       
-            $nights = $this->getNightsCount($price->start, $price->end, $startDate, $endDate, $totalNights);           
+                   
+
+     
             if (!empty($price->policy_id)) {
                 $charging_policy_criteria = 'charging_policy';
                 $charging_policy = DB::select("select sp.id as service_policy_id, sp.charging_policy_id, cp.name as charging_policy_name, cp.charging_duration, cp.day_duration,cp.room_based from service_policies sp, charging_policies cp, prices p where p.season_period_id = ? and p.priceable_id = ? and sp.price_id = p.id and sp.charging_policy_id = ? and  sp.charging_policy_id = cp.id", [$price->season_period_id, $price->option_id, $price->policy_id]);
@@ -284,18 +357,24 @@ class RatesRepository {
                 $charging_policy = DB::select("select id as price_band_id, name, min, max from price_bands where id = ? ", [$price->price_band_id]);
             }
 
-            $buy_price = $this->getFinalRatesWithChargingPolicy($price->buy_price, $charging_policy, $quantity, $nights, $charging_policy_criteria);
-            $sell_price = $this->getFinalRatesWithChargingPolicy($price->sell_price, $charging_policy, $quantity, $nights, $charging_policy_criteria);
+            
 
             if (!isset($priceWithChargingPolicy[$price->season_name])) {
+                
                 $i = 0;
+                
+                $nights = $this->getNightsCount($price->start, $price->end, $startDate, $endDate, $totalNights)+1;    
                 $priceWithChargingPolicy[$price->season_name] = array(
                     'season_period_id' => $price->season_period_id,
                     'season_name' => $price->season_name,
                     'season_period' => $price->start . ' to ' . $price->end,
                     'number_of_nights' => $nights
                 );
+                
             }
+            
+            $buy_price = $this->getFinalRatesWithChargingPolicy($price->buy_price, $charging_policy, $quantity, $nights, $charging_policy_criteria);
+            $sell_price = $this->getFinalRatesWithChargingPolicy($price->sell_price, $charging_policy, $quantity, $nights, $charging_policy_criteria);
 
             $priceWithChargingPolicy[$price->season_name]['options'][$i] = array(
                 'option_id' => $price->option_id,
@@ -304,8 +383,8 @@ class RatesRepository {
                 'with_out_policy_sell_price' => $price->sell_price,
                 'charging_policy_criteria' => $charging_policy_criteria,
                 'charging_policy' => $charging_policy,
-                'with_policy_buy_price' => $this->getFinalRatesWithChargingPolicy($price->buy_price, $charging_policy, $quantity, $nights, $charging_policy_criteria),
-                'with_policy_sell_price' => $this->getFinalRatesWithChargingPolicy($price->sell_price, $charging_policy, $quantity, $nights, $charging_policy_criteria)
+                'with_policy_buy_price' => $buy_price,
+                'with_policy_sell_price' => $sell_price
             );
 
             $priceWithChargingPolicy['finalPrice']['buy_price'][$price->option_id] += ($buy_price);
