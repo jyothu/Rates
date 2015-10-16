@@ -56,4 +56,13 @@ Route::group(['prefix' => 'api'], function () {
         );
 
     });
+
+    Route::group(['prefix' => 'fastbuild/v1', 'before' => 'authv1'], function () {
+
+        Route::post(
+            '{uri}',
+            ['uses' => 'App\Controllers\FastBuildController@callFunction']
+        );
+
+    });
 });
