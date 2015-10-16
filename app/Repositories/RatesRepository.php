@@ -35,7 +35,7 @@ class RatesRepository {
     }
 
     public function serviceExtrasAndRates($serviceId, $startDate, $endDate) {
-        return DB::select("select buy_price, sell_price, service_extras.name as extra_name, season_period_id, start, end, price_bands.id as price_band_id, price_bands.ts_id as price_band_tsid, price_bands.name as price_band_name, charging_policies.id as policy_id, charging_policies.ts_id as policy_tsid, charging_policies.name as policy_name, priceable_id as extra_id, prices.id as price_id, service_extras.ts_id as extra_tsid from prices join service_extras on (prices.priceable_id = service_extras.id AND priceable_type LIKE '%ServiceExtra') join season_periods on (prices.season_period_id=season_periods.id) left join ( service_price_bands join price_bands on (service_price_bands.price_band_id = price_bands.id) ) on (service_price_bands.price_id = prices.id) left join ( service_policies join charging_policies on (service_policies.charging_policy_id = charging_policies.id)) on (service_policies.price_id = prices.id) WHERE prices.service_id=? AND season_period_id IN (select id from season_periods where  start<=? AND end>=? OR start<=? AND end>=?) and service_extras.status=?", [$serviceId, $startDate, $startDate, $endDate, $endDate, 1]);
+        return DB::select("select buy_price, sell_price, service_extras.name as extra_name, season_period_id, seasons.name as season_name, start, end, price_bands.id as price_band_id, price_bands.ts_id as price_band_tsid, price_bands.name as price_band_name, charging_policies.id as policy_id, charging_policies.ts_id as policy_tsid, charging_policies.name as policy_name, priceable_id as extra_id, prices.id as price_id, service_extras.ts_id as extra_tsid from prices join service_extras on (prices.priceable_id = service_extras.id AND priceable_type LIKE '%ServiceExtra') join season_periods on (prices.season_period_id=season_periods.id) join seasons on (season_periods.season_id = seasons.id) left join ( service_price_bands join price_bands on (service_price_bands.price_band_id = price_bands.id) ) on (service_price_bands.price_id = prices.id) left join ( service_policies join charging_policies on (service_policies.charging_policy_id = charging_policies.id)) on (service_policies.price_id = prices.id) WHERE prices.service_id=? AND season_period_id IN (select id from season_periods where  start<=? AND end>=? OR start<=? AND end>=?) and service_extras.status=?", [$serviceId, $startDate, $startDate, $endDate, $endDate, 1]);
     }
 
     public function getServiceWithCurrency($serviceId) {
@@ -82,13 +82,11 @@ class RatesRepository {
         } else {
             $respArray["GetServicesPricesAndAvailabilityResult"]["Errors"] = (object) array();
             foreach ($serviceOptions as $key => $price) {
-                $price->policy_id = '';
-                $price->price_band_id = 1;
+                
                 // Charging Policy -  Start
                 if (self::WITH_CHARGING_POLICY == 1) {
-                    if (!empty($price->policy_id)) {
-                        echo 'with policy id';
-                        $price->buy_price = $this->applyRatesChargingPolicy($withChargingPolicyPrices, 'buy_price', $price->option_id, $price->buy_price);
+                    if (!empty($price->policy_id)) {                        
+                        $price->buy_price = $this->applyRatesChargingPolicy($withChargingPolicyPrices, 'buy_price', $price->option_id, $price->buy_price);                        
                         $price->sell_price = $this->applyRatesChargingPolicy($withChargingPolicyPrices, 'sell_price', $price->option_id, $price->sell_price);
                     } else if (!empty($price->price_band_id)) {
 //                        $price->buy_price = $this->applyPriceBandChargingPolicy($withChargingPolicyPrices, 'buy_price', $price->option_id, $price->buy_price);
@@ -145,8 +143,15 @@ class RatesRepository {
         $actualEnd = $carbonEnd->subDay()->format('Y-m-d');
         $startDate = Carbon::parse($startDate)->format('Y-m-d');
         $serviceExtras = $this->serviceExtrasAndRates($service->id, $startDate, $actualEnd);
-print_r($serviceExtras);
-//die();
+               
+        // Charging Policy -  start
+        if (self::WITH_CHARGING_POLICY == 1) {
+            $pricesBreakup = $this->getPriceBreakupWithSeasonsIdWithinStartandEndDate($service->id, $startDate, $endDate, $quantity, $nights, 'ServiceExtra');
+            $withChargingPolicyPrices = $pricesBreakup['finalPrice'];
+        }
+        // Charging Policy -  End
+
+
         if (empty($serviceExtras) || is_null($serviceExtras)) {
             $responseValue = array(
                 "Errors" => (object) array(),
@@ -168,21 +173,54 @@ print_r($serviceExtras);
             $respArray["ServiceExtrasAndPricesResponse"] = $responseValue;
 
             foreach ($serviceExtras as $key => $extra) {
-                $value = array(
-                    "ExtraMandatory" => false,
-                    "OccupancyTypeID" => 0,
-                    "ServiceTypeTypeID" => 1,
-                    "ServiceTypeTypeName" => "Others",
-                    "MaxAdults" => 100,
-                    "MaxChild" => 0,
-                    "MinAdults" => 0,
-                    "MinChild" => 0,
-                    "ChildMaxAge" => 0,
-                    "ServiceExtraId" => $extra->extra_tsid,
-                    "ServiceExtraCode" => $extra->extra_id,
-                    "ServiceTypeExtraName" => $extra->extra_name,
-                    "TOTALPRICE" => ceil($extra->sell_price * $exchangeRate * $nights)
-                );
+                
+                // Charging Policy -  Start
+                if (self::WITH_CHARGING_POLICY == 1) {
+                    if (!empty($extra->policy_id)) {                        
+                        $extra->buy_price = $this->applyRatesChargingPolicy($withChargingPolicyPrices, 'buy_price', $extra->extra_id, $extra->buy_price);
+                        $extra->sell_price = $this->applyRatesChargingPolicy($withChargingPolicyPrices, 'sell_price', $extra->extra_id, $extra->sell_price);
+                    } else if (!empty($price->price_band_id)) {
+//                        $extra->buy_price = $this->applyPriceBandChargingPolicy($withChargingPolicyPrices, 'buy_price', $extra->extra_id, $extra->buy_price);
+//                        $extra->sell_price = $this->applyPriceBandChargingPolicy($withChargingPolicyPrices, 'sell_price', $extra->extra_id, $extra->sell_price);
+                    }
+                }
+                // Charging Policy -  End
+                
+                if (self::WITH_CHARGING_POLICY == 1) {
+                    $value = array(
+                        "ExtraMandatory" => false,
+                        "OccupancyTypeID" => 0,
+                        "ServiceTypeTypeID" => 1,
+                        "ServiceTypeTypeName" => "Others",
+                        "MaxAdults" => 100,
+                        "MaxChild" => 0,
+                        "MinAdults" => 0,
+                        "MinChild" => 0,
+                        "ChildMaxAge" => 0,
+                        "ServiceExtraId" => $extra->extra_tsid,
+                        "ServiceExtraCode" => $extra->extra_id,
+                        "ServiceTypeExtraName" => $extra->extra_name,
+                        "TOTALPRICE" => ceil($extra->sell_price * $exchangeRate)
+                    );
+                } else {
+                    $value = array(
+                        "ExtraMandatory" => false,
+                        "OccupancyTypeID" => 0,
+                        "ServiceTypeTypeID" => 1,
+                        "ServiceTypeTypeName" => "Others",
+                        "MaxAdults" => 100,
+                        "MaxChild" => 0,
+                        "MinAdults" => 0,
+                        "MinChild" => 0,
+                        "ChildMaxAge" => 0,
+                        "ServiceExtraId" => $extra->extra_tsid,
+                        "ServiceExtraCode" => $extra->extra_id,
+                        "ServiceTypeExtraName" => $extra->extra_name,
+                        "TOTALPRICE" => ceil($extra->sell_price * $exchangeRate * $nights)
+                    );
+                }
+                
+               
                 $respArray["ServiceExtrasAndPricesResponse"]["ResponseList"]["ServiceExtras"][] = $value;
                 $price = array(
                     "PriceId" => $extra->price_id,
@@ -218,16 +256,26 @@ print_r($serviceExtras);
 
     function getPriceBreakupWithSeasonsIdWithinStartandEndDate($serviceId, $startDate, $endDate, $quantity, $totalNights, $apiCall = 'ServiceRate') {
 
-        $serviceOptions = $this->serviceOptionsAndRates($serviceId, $startDate, $endDate);
-
+        if($apiCall == 'ServiceExtra') {
+            echo 'ServiceExtra';
+            $serviceOptions = $this->serviceExtrasAndRates($serviceId, $startDate, $endDate);
+        }  else {
+            $serviceOptions = $this->serviceOptionsAndRates($serviceId, $startDate, $endDate);
+        }
+        
         $i = 0;
         foreach ($serviceOptions as $key => $price) {
 
+            if($apiCall == 'ServiceExtra') {
+                $price->option_id = $price->extra_id;
+                $price->option_name = $price->extra_name;
+            } 
+            
             if (!isset($priceWithChargingPolicy['finalPrice']['buy_price'][$price->option_id]))
-                $priceWithChargingPolicy['finalPrice']['buy_price'][$price->option_id] = 0;
+            $priceWithChargingPolicy['finalPrice']['buy_price'][$price->option_id] = 0;
             if (!isset($priceWithChargingPolicy['finalPrice']['sell_price'][$price->option_id]))
-                $priceWithChargingPolicy['finalPrice']['sell_price'][$price->option_id] = 0;
-            $nights = $this->getNightsCount($price->start, $price->end, $startDate, $endDate, $totalNights);
+            $priceWithChargingPolicy['finalPrice']['sell_price'][$price->option_id] = 0;       
+            $nights = $this->getNightsCount($price->start, $price->end, $startDate, $endDate, $totalNights);           
             if (!empty($price->policy_id)) {
                 $charging_policy_criteria = 'charging_policy';
                 $charging_policy = DB::select("select sp.id as service_policy_id, sp.charging_policy_id, cp.name as charging_policy_name, cp.charging_duration, cp.day_duration,cp.room_based from service_policies sp, charging_policies cp, prices p where p.season_period_id = ? and p.priceable_id = ? and sp.price_id = p.id and sp.charging_policy_id = ? and  sp.charging_policy_id = cp.id", [$price->season_period_id, $price->option_id, $price->policy_id]);
@@ -265,7 +313,7 @@ print_r($serviceExtras);
 
             $i++;
         }
-
+//print_r($priceWithChargingPolicy) ;
         return isset($priceWithChargingPolicy) ? $priceWithChargingPolicy : false;
     }
 
