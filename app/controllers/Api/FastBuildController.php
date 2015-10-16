@@ -8,21 +8,19 @@ use Validator;
 use Response;
 use App\Repositories\FastBuildRepository;
 
-class FastBuildController extends BaseController
-{
+class FastBuildController extends BaseController {
 
-	// public $fastBuildRules = [
- //        'SERVICEIDs' => 'required',
- //        'SERVICETYPEID' => 'required|exists:service_types,id',
- //        'START_DATE' => 'required|date',
- //        'NUMBER_OF_NIGHTS' => 'required|numeric'
- //    ];
+    // public $fastBuildRules = [
+    //        'SERVICEIDs' => 'required',
+    //        'SERVICETYPEID' => 'required|exists:service_types,id',
+    //        'START_DATE' => 'required|date',
+    //        'NUMBER_OF_NIGHTS' => 'required|numeric'
+    //    ];
 
-	public function __construct(FastBuildRepository $fastBuildRepo)
-    {
+    public function __construct(FastBuildRepository $fastBuildRepo) {
         $this->fastBuildRepo = $fastBuildRepo;
     }
-  
+
     // public $requestData = array(
     // 	"fast_build_type" => "service",
     //     "service_tsid" => 500012,
@@ -47,33 +45,29 @@ class FastBuildController extends BaseController
     //     "parent_region_id" => 11016
     // );
 
-    public function createServiceOrCity()
-    {
+    public function createServiceOrCity() {
         $requestData = Input::all();
         // $validator = Validator::make($requestData, $this->serviceRules);
         // $requestData = $this->requestData;
 
         if ($requestData["fast_build_type"] == "service") {
-        	$response = $this->fastBuildRepo->createService($requestData);
+            $response = $this->fastBuildRepo->createService($requestData);
         } else {
-        	$response = $this->fastBuildRepo->createCity($requestData); 
+            $response = $this->fastBuildRepo->createCity($requestData);
         }
 
-        if (isset($response)){
+        if (isset($response)) {
             return Response::json($response, 200);
         }
     }
-    
 
-    public function callFunction($funcName)
-    {
+    public function callFunction($funcName) {
         if (method_exists($this, $funcName)) {
-            return call_user_func([$this,$funcName]);
+            return call_user_func([$this, $funcName]);
         } else {
 
             return Response::json(array('Error' => "Please check the API Url"));
         }
     }
-
 
 }
