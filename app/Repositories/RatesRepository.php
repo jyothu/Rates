@@ -36,7 +36,7 @@ class RatesRepository
 
     public function serviceExtrasAndRates($serviceId, $startDate, $endDate)
     {
-        return DB::select("select buy_price, sell_price, service_extras.name as name, season_period_id, start, end, priceable_id as extra_id, prices.id as price_id, policies.name as policy_name, service_extras.ts_id as extra_ts_id from prices join service_extras on (prices.priceable_id = service_extras.id AND priceable_type LIKE '%ServiceExtra') join policies ON (service_extras.policy_id=policies.id) join season_periods on (prices.season_period_id=season_periods.id) AND prices.service_id=? AND season_period_id IN (select id from season_periods where  start<=? AND end>=? OR start<=? AND end>=?) and service_extras.status=?", [$serviceId, $startDate, $startDate, $endDate, $endDate, 1]);
+        return DB::select("select buy_price, sell_price, service_extras.name as extra_name, season_period_id, start, end, price_bands.id as price_band_id, price_bands.ts_id as price_band_tsid, price_bands.name as price_band_name, charging_policies.id as policy_id, charging_policies.ts_id as policy_tsid, charging_policies.name as policy_name, priceable_id as extra_id, prices.id as price_id, service_extras.ts_id as extra_tsid from prices join service_extras on (prices.priceable_id = service_extras.id AND priceable_type LIKE '%ServiceExtra') join season_periods on (prices.season_period_id=season_periods.id) left join ( service_price_bands join price_bands on (service_price_bands.price_band_id = price_bands.id) ) on (service_price_bands.price_id = prices.id) left join ( service_policies join charging_policies on (service_policies.charging_policy_id = charging_policies.id)) on (service_policies.price_id = prices.id) WHERE prices.service_id=? AND season_period_id IN (select id from season_periods where  start<=? AND end>=? OR start<=? AND end>=?) and service_extras.status=?", [$serviceId, $startDate, $startDate, $endDate, $endDate, 1]);
     }
 
     public function getServiceWithCurrency($serviceId)
@@ -145,9 +145,9 @@ class RatesRepository
                     "MinAdults" => 0, 
                     "MinChild" => 0, 
                     "ChildMaxAge" => 0, 
-                    "ServiceExtraId" => $extra->extra_ts_id, 
+                    "ServiceExtraId" => $extra->extra_tsid, 
                     "ServiceExtraCode" => $extra->extra_id, 
-                    "ServiceTypeExtraName" => $extra->name,
+                    "ServiceTypeExtraName" => $extra->extra_name,
                     "TOTALPRICE" => ceil($extra->sell_price*$exchangeRate*$nights)
                     );
                 $respArray["ServiceExtrasAndPricesResponse"]["ResponseList"]["ServiceExtras"][] = $value;
