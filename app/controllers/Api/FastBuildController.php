@@ -23,43 +23,43 @@ class FastBuildController extends BaseController
         $this->fastBuildRepo = $fastBuildRepo;
     }
   
-    public $requestData = array(
-    	"fast_build_type" => "service",
-        "service_tsid" => 100000,
-        "service_name" => "Fast Build Testing",
-        "supplier_name" => "Enchanting Travels",
-        "service_type" => 2,
-        "meals" => "Breakfast",
-        "currency" => "USD",
-        "region_tsid" => 100000,
-        "option" => array(
-        	array(
-	            "option_name" => "Service Option Fast Build 1",
-	            "occupancy_id" => 1,
-	            "start_date" => "2015-10-01",
-	            "end_date" => "2016-04-01",
-	            "buy_price" => 9000,
-	            "sell_price" => 10000
-            ),
-            array(
-	            "option_name" => "Service Option Fast Build 2",
-	            "occupancy_id" => 2,
-	            "start_date" => "2015-10-01",
-	            "end_date" => "2016-04-01",
-	            "buy_price" => 11000,
-	            "sell_price" => 12000
-            )
-        ),
-        // "region_tsid" => 100000,
-        // "region_name" => "Murugeshpalay",
-        "parent_region_id" => 11016
-    );
+    // public $requestData = array(
+    // 	"fast_build_type" => "service",
+    //     "service_tsid" => 100000,
+    //     "service_name" => "Fast Build Testing",
+    //     "supplier_name" => "Enchanting Travels",
+    //     "service_type" => 2,
+    //     "meals" => "Breakfast",
+    //     "currency" => "USD",
+    //     "region_tsid" => 100000,
+    //     "option" => array(
+    //     	array(
+	   //          "option_name" => "Service Option Fast Build 1",
+	   //          "occupancy_id" => 1,
+	   //          "start_date" => "2015-10-01",
+	   //          "end_date" => "2016-04-01",
+	   //          "buy_price" => 9000,
+	   //          "sell_price" => 10000
+    //         ),
+    //         array(
+	   //          "option_name" => "Service Option Fast Build 2",
+	   //          "occupancy_id" => 2,
+	   //          "start_date" => "2015-10-01",
+	   //          "end_date" => "2016-04-01",
+	   //          "buy_price" => 11000,
+	   //          "sell_price" => 12000
+    //         )
+    //     ),
+    //     // "region_tsid" => 100000,
+    //     // "region_name" => "Murugeshpalay",
+    //     "parent_region_id" => 11016
+    // );
 
     public function createServiceOrCity()
     {
-        // $requestData = json_decode(Input::get('data'), true);
+        $requestData = Input::all();
         // $validator = Validator::make($requestData['IncomingRequest'], $this->serviceRules);
-        $requestData = $this->requestData;
+        // $requestData = $this->requestData;
 
         if ($requestData["fast_build_type"] == "service") {
         	$response = $this->fastBuildRepo->createService($requestData);

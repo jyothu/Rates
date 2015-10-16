@@ -28,11 +28,11 @@ class FastBuildRepository
 	
 	function createCity($params)
 	{
-        $tsId = $params["region_id"];
+        $tsId = $params["region_tsid"];
         $name = $params["region_name"];
         $parentId = $params["parent_region_id"];
 
-        $parentObj = Region::find($parentId);
+        $parentObj = Region::where('ts_id', $parentId)->first();
         $regionParams = array('ts_id' => $tsId, 'name' => $name, 'parent_id' => ($parentObj ? $parentObj->id : 0));
         
         try {
@@ -52,7 +52,6 @@ class FastBuildRepository
 
         try
         {
-	        
 			$regionTsId = $params["region_tsid"];
 			$serviceTsId = $params["service_tsid"];
 			$serviceName = $params["service_name"];
