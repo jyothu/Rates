@@ -81,16 +81,18 @@ class RatesRepository
                     $totalBuyingPrice[$price->option_id] = $totalSellingPrice[$price->option_id] = 0;
                 }
                 $mealPlan = ["MealPlanID" => $price->meal_id, "MealPlanName" =>$price->meal_name, "MealPlanCode" => $price->meal_name.$price->meal_id];
+                $multiplicand = 1;
                 if ($price->price_band_id) {
-                    $totalBuyingPrice[$price->option_id] += ($price->buy_price)*$quantity;
-                    $totalSellingPrice[$price->option_id] += ($price->sell_price)*$quantity;
-                } else {
-                    $nights = $this->getNightsCount($price->start, $price->end, $startDate, $endDate, $totalNights);
-                    $totalBuyingPrice[$price->option_id] += ($price->buy_price)*$nights*$quantity;
-                    $totalSellingPrice[$price->option_id] += ($price->sell_price)*$nights*$quantity;
+                    $multiplicand *= $quantity;
+                } else if ($price->policy_id) {
+                    if ($price->policy_name != "Fast Build") {
+                        $nights = $this->getNightsCount($price->start, $price->end, $startDate, $endDate, $totalNights);
+                        $multiplicand *= $nights*$quantity;
+                    }
                 }
-
-                 $values = array("MaxChild" => $price->max_children, "MaxAdult" =>  $price->max_adults,
+                $totalBuyingPrice[$price->option_id] += ($price->buy_price)*$multiplicand;
+                $totalSellingPrice[$price->option_id] += ($price->sell_price)*$multiplicand;
+                $values = array("MaxChild" => $price->max_children, "MaxAdult" =>  $price->max_adults,
                     "Occupancy" => $price->occupancy_id, "Currency" => $toCurrency,
                     "TotalSellingPrice" => ceil(($totalSellingPrice[$price->option_id])*$exchangeRate),
                     "TotalBuyingPrice" => ceil(($totalBuyingPrice[$price->option_id])*$exchangeRate),
