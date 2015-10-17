@@ -49,6 +49,8 @@ foreach($csv as $row) {
 	$buyPrice = $row["BUYPRICE"];
 	$margin = $row["MARGIN"];
     $sellPrice = $row["SELLING"];
+    $minPriceBand = $row["MIN"];
+    $maxPriceBand = $row["MAX"];
 	$optionStatus = (($row["Option-status"] == "Unavailable") ? 0 : 1);
     
     print_r($row);
@@ -80,6 +82,13 @@ foreach($csv as $row) {
     if ($policyId) {
         $policyParams = array('ts_id' => $policyId, 'name' => $policyName);
         $policyObj = Models\ChargingPolicy::firstOrCreate( $policyParams );
+    }
+
+    // Find or Create Price Bands
+    $priceBandObj = null;
+    if ($minPriceBand) {
+        $priceBandParams = array('min' => $minPriceBand, 'max' => $maxPriceBand);
+        $priceBandObj = Models\PriceBand::firstOrCreate( $priceBandParams );
     }
 
     // Find or Create Contracts
@@ -133,11 +142,11 @@ foreach($csv as $row) {
         $priceObj->servicePolicy()->firstOrCreate( $servicePolicyParams );
     }
 
-    // Find or Create Service Policies
-    // if ($priceBandObj) {
-    //     $serviceBandParams = array('price_band_id' => $priceBandObj->id);
-    //     $priceObj->servicePriceBand()->firstOrCreate( $serviceBandParams );
-    // }
+    // Find or Create Service Price Bands
+    if ($priceBandObj) {
+        $serviceBandParams = array('price_band_id' => $priceBandObj->id);
+        $priceObj->servicePriceBand()->firstOrCreate( $serviceBandParams );
+    }
 
     echo "Service ".$serviceObj->id." / ".$serviceObj->name." has been created...\n";
 }

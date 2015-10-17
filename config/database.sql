@@ -112,8 +112,6 @@ CREATE TABLE `charging_policies` (
 
 CREATE TABLE `price_bands` (
   `id` bigint(12) NOT NULL AUTO_INCREMENT,
-  `ts_id` bigint(12) NOT NULL UNIQUE,
-  `name` varchar(255) NOT NULL UNIQUE,
   `min` int(10) DEFAULT 0,
   `max` int(10) DEFAULT NULL,
   `status` tinyint(1) DEFAULT 1,
