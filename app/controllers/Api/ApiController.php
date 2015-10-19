@@ -68,9 +68,142 @@ class ApiController extends BaseController
      * 18 april - 11 day/night
      * 19 april - 12 - day checkout
      */ 
-    
+    //11/05/2017 mm/dd/YY
+    //2015-10-07 YY-MM-DD
+    //04/07/2015 => 2015-04-07
 
-public $requestData = array ( 'IncomingRequest' => array ( 'ROOMS_REQUIRED' => array ( 'ROOM' => array ( 0 => array ( 'OCCUPANCY' => '3', 'QUANTITY' => 4, 'NO_OF_PASSENGERS' => 2, 'CHILDREN' => array ( 'CHILD_RATE' => array ( 'CHILD_QUANTITY' => '0', 'CHILD_AGE' => '5', ), ), ), 1 => array ( 'OCCUPANCY' => '7', 'QUANTITY' => 1, 'NO_OF_PASSENGERS' => 1, 'CHILDREN' => array ( 'CHILD_RATE' => array ( 'CHILD_QUANTITY' => '1', 'CHILD_AGE' => '5', ), ), ), 2 => array ( 'OCCUPANCY' => '8', 'QUANTITY' => 1, 'NO_OF_PASSENGERS' => 4, 'CHILDREN' => array ( 'CHILD_RATE' => array ( 'CHILD_QUANTITY' => '2', 'CHILD_AGE' => '5', ), ), ), 3 => array ( 'OCCUPANCY' => '6', 'QUANTITY' => 1, 'NO_OF_PASSENGERS' => 15, 'CHILDREN' => array ( 'CHILD_RATE' => array ( 'CHILD_QUANTITY' => '10', 'CHILD_AGE' => '5', ), ), ), 4 => array ( 'OCCUPANCY' => '5', 'QUANTITY' => 1, 'NO_OF_PASSENGERS' => 4, 'CHILDREN' => array ( 'CHILD_RATE' => array ( 'CHILD_QUANTITY' => '0', 'CHILD_AGE' => '5', ), ), ), 5 => array ( 'OCCUPANCY' => '1', 'QUANTITY' => 1, 'NO_OF_PASSENGERS' => 2, 'CHILDREN' => array ( 'CHILD_RATE' => array ( 'CHILD_QUANTITY' => '1', 'CHILD_AGE' => '5', ), ), ), 6 => array ( 'OCCUPANCY' => '4', 'QUANTITY' => 1, 'NO_OF_PASSENGERS' => 3, 'CHILDREN' => array ( 'CHILD_RATE' => array ( 'CHILD_QUANTITY' => '0', 'CHILD_AGE' => '5', ), ), ), 7 => array ( 'OCCUPANCY' => '2', 'QUANTITY' => 1, 'NO_OF_PASSENGERS' => 2, 'CHILDREN' => array ( 'CHILD_RATE' => array ( 'CHILD_QUANTITY' => '0', 'CHILD_AGE' => '5', ), ), ), ), ), 'VERSION_HISTORY' => array ( 'LANGUAGE' => 'en-GB', 'LICENCE_KEY' => 'A6C2FAAA-62D7-4A1B-9AB5-C6BF801E7803', ), 'ISMEALPLANSREQUIRED' => 0, 'IMAGENOTREQUIRED' => 1, 'ReturnMatchCode' => 'true', 'SEARCHWITHFACILITIES_OPTIONS' => 'ALL', 'NotesRequired' => false, 'SERVICEIDs' => '26666', 'START_DATE' => '04/07/2015', 'NUMBER_OF_NIGHTS' => 12, 'AVAILABLE_ONLY' => false, 'GET_START_PRICE' => true, 'CURRENCY' => 'USD', 'SERVICETYPEID' => 2, 'RETURN_ONLY_NON_ACCOM_SERVICES' => false, 'ROOM_REPLY' => array ( 'ANY_ROOM' => 'true', ), 'DoNotReturnNonRefundable' => false, 'DoNotReturnWithCancellationPenalty' => false, 'BESTSELLER' => false, 'CLIENT_ID' => 0, 'BOOKING_TYPE_ID' => 0, 'BOOKINGTYPE' => 0, 'PRICETYPE' => 0, 'SERVICETYPERATINGTYPEID' => 0, 'SERVICETYPERATINGID' => 0, 'IsServiceOptionDescriptionRequired' => 'true', 'IsServiceInfoRequired' => 'true', 'ReturnMandatoryExtraPrices' => false, 'NATIONALITYID' => 0, 'ReturnAttachedOptionExtra' => false, 'SERVICESEARCHTYPE' => 'ENHANCED', 'ReturnAppliedOptionChargingPolicyDetails' => false, ), );
+public $requestData = array ( 
+    'IncomingRequest' => array ( 
+        'ROOMS_REQUIRED' => array ( 
+            'ROOM' => array ( 
+                0 => array ( 
+                    'OCCUPANCY' => '3', 
+                    'QUANTITY' => 1, 
+                    'NO_OF_PASSENGERS' => 2, 
+                    'CHILDREN' => array ( 
+                        'CHILD_RATE' => array ( 
+                            'CHILD_QUANTITY' => '0', 
+                            'CHILD_AGE' => '5', 
+                            ),
+                        ), 
+                    ), 
+                /*1 => array ( 
+                    'OCCUPANCY' => '7', 
+                    'QUANTITY' => 1, 
+                    'NO_OF_PASSENGERS' => 1, 
+                    'CHILDREN' => array ( 
+                        'CHILD_RATE' => array ( 
+                            'CHILD_QUANTITY' => '1', 
+                            'CHILD_AGE' => '5', 
+                            ), 
+                        ), 
+                    ), 
+                2 => array ( 
+                    'OCCUPANCY' => '8', 
+                    'QUANTITY' => 1, 
+                    'NO_OF_PASSENGERS' => 4, 
+                    'CHILDREN' => array ( 
+                        'CHILD_RATE' => array ( 
+                            'CHILD_QUANTITY' => '2', 
+                            'CHILD_AGE' => '5', 
+                            ), 
+                        ), 
+                    ), 
+                3 => array ( 
+                    'OCCUPANCY' => '6', 
+                    'QUANTITY' => 1, 
+                    'NO_OF_PASSENGERS' => 15, 
+                    'CHILDREN' => array ( 
+                        'CHILD_RATE' => array ( 
+                            'CHILD_QUANTITY' => '10', 
+                            'CHILD_AGE' => '5', 
+                            ), 
+                        ), 
+                    ), 
+                4 => array ( 
+                    'OCCUPANCY' => '5', 
+                    'QUANTITY' => 1, 
+                    'NO_OF_PASSENGERS' => 4, 
+                    'CHILDREN' => array ( 
+                        'CHILD_RATE' => array ( 
+                            'CHILD_QUANTITY' => '0', 
+                            'CHILD_AGE' => '5', 
+                            ), 
+                        ), 
+                    ), 
+                5 => array ( 
+                    'OCCUPANCY' => '1', 
+                    'QUANTITY' => 1, 
+                    'NO_OF_PASSENGERS' => 2, 
+                    'CHILDREN' => array ( 
+                        'CHILD_RATE' => array ( 
+                            'CHILD_QUANTITY' => '1', 
+                            'CHILD_AGE' => '5', 
+                            ), 
+                        ), 
+                    ), 
+                6 => array ( 
+                    'OCCUPANCY' => '4', 
+                    'QUANTITY' => 1, 
+                    'NO_OF_PASSENGERS' => 3, 
+                    'CHILDREN' => array ( 
+                        'CHILD_RATE' => array ( 
+                            'CHILD_QUANTITY' => '0', 
+                            'CHILD_AGE' => '5', 
+                            ), 
+                        ), 
+                    ), 
+                7 => array ( 
+                    'OCCUPANCY' => '2', 
+                    'QUANTITY' => 1, 
+                    'NO_OF_PASSENGERS' => 2, 
+                    'CHILDREN' => array ( 
+                        'CHILD_RATE' => array ( 
+                            'CHILD_QUANTITY' => '0', 
+                            'CHILD_AGE' => '5', 
+                            ), 
+                        ), 
+                    ),*/ 
+                ), 
+            ), 
+        'VERSION_HISTORY' => array ( 
+            'LANGUAGE' => 'en-GB', 
+            'LICENCE_KEY' => 'A6C2FAAA-62D7-4A1B-9AB5-C6BF801E7803', 
+            ), 
+        'ISMEALPLANSREQUIRED' => 0, 
+        'IMAGENOTREQUIRED' => 1, 
+        'ReturnMatchCode' => 'true', 
+        'SEARCHWITHFACILITIES_OPTIONS' => 'ALL', 
+        'NotesRequired' => false, 
+        'SERVICEIDs' => '26666', 
+        'START_DATE' => '01/10/2017', // 2016-09-25-
+        'NUMBER_OF_NIGHTS' => 3, 
+        'AVAILABLE_ONLY' => false, 
+        'GET_START_PRICE' => true, 
+        'CURRENCY' => 'USD', 
+        'SERVICETYPEID' => 2, 
+        'RETURN_ONLY_NON_ACCOM_SERVICES' => false, 
+        'ROOM_REPLY' => array ( 
+            'ANY_ROOM' => 'true', 
+            ), 
+        'DoNotReturnNonRefundable' => false, 
+        'DoNotReturnWithCancellationPenalty' => false, 
+        'BESTSELLER' => false, 
+        'CLIENT_ID' => 0, 
+        'BOOKING_TYPE_ID' => 0, 
+        'BOOKINGTYPE' => 0, 
+        'PRICETYPE' => 0, 
+        'SERVICETYPERATINGTYPEID' => 0, 
+        'SERVICETYPERATINGID' => 0, 
+        'IsServiceOptionDescriptionRequired' => 'true', 
+        'IsServiceInfoRequired' => 'true', 
+        'ReturnMandatoryExtraPrices' => false, 
+        'NATIONALITYID' => 0, 
+        'ReturnAttachedOptionExtra' => false, 
+        'SERVICESEARCHTYPE' => 'ENHANCED', 
+        'ReturnAppliedOptionChargingPolicyDetails' => false, 
+        ), 
+    );
 
     // public $requestData = array("IncomingRequest" => array(
     //     "VERSION_HISTORY" => array("LANGUAGE" => "en-GB", "LICENCE_KEY" => "A6C2FAAA-62D7-4A1B-9AB5C6BF801E7803"),
@@ -133,7 +266,7 @@ public $requestData = array ( 'IncomingRequest' => array ( 'ROOMS_REQUIRED' => a
             if (isset($requestData['IncomingRequest']["ROOMS_REQUIRED"]["ROOM"]["QUANTITY"])) {
                 $quantity = $requestData['IncomingRequest']["ROOMS_REQUIRED"]["ROOM"]["QUANTITY"];
             } else {
-                $quantity = $requestData['IncomingRequest']["ROOMS_REQUIRED"]["ROOM"][0]["QUANTITY"];                
+                $quantity = $requestData['IncomingRequest']["ROOMS_REQUIRED"]["ROOM"][0]["QUANTITY"];  
             }
             
             $response = $this->apiService->collectServicePrices($requestData['IncomingRequest']['SERVICEIDs'], $requestData['IncomingRequest']['START_DATE'], $requestData['IncomingRequest']['NUMBER_OF_NIGHTS'], $requestData['IncomingRequest']["CURRENCY"], $quantity);

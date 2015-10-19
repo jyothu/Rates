@@ -58,7 +58,7 @@ class TravelStudioClientBase
             "trace" => 1,
             "exceptions" => 1,
         );
-        $client = new \SoapClient('http://172.30.1.227/B2CWS/B2CXMLAPIWebService.asmx?WSDL', $params);
+        $client = new \SoapClient('http://52.74.9.44/B2CWS/B2CXMLAPIWebService.asmx?WSDL', $params);
         return $client;
     }
 
@@ -94,6 +94,7 @@ class TravelStudioClientBase
         $this->responseErrorType = [];
         $this->serviceOptions = [];
         $this->defaultServiceOption = [];
+        
         return $this->checkAvailabilityAndCalculateDayWisePriceForService($serviceId, $serviceTypeId, $dateOnWhichServiceIsRequired, $nightsForWhichServiceIsRequired, $currencyCode, $serviceCheck, $region_id, $limitToOneRoomType);
     }
 
