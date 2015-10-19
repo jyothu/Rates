@@ -81,9 +81,22 @@ foreach($csv as $row) {
     $policyObj = null;
     if ($policyId) {
         $policyParams = array('ts_id' => $policyId, 'name' => $policyName);
-        $policyObj = Models\ChargingPolicy::firstOrCreate( $policyParams );
-    }
+        $policyObj = Models\ChargingPolicy::where('ts_id', $policyId)->where('name', $policyName)->first();
+        if (!$policyObj) {
+            $roomBased = 0;
+            $dayDuration = 1;
+            if (preg_match("/room|unit/i", $policyName)) {
+                $roomBased = 1;
+            }
 
+            if( preg_match('!\d+!', $policyName, $matches)){
+                $dayDuration = $matches[0];
+            }
+            $policyArgs = array('room_based' => $roomBased, 'day_duration' => $dayDuration);
+            $policyObj = Models\ChargingPolicy::create( array_merge($policyParams, $policyArgs));
+        }
+    }
+    
     // Find or Create Price Bands
     $priceBandObj = null;
     if ($minPriceBand) {
