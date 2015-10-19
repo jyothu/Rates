@@ -26,184 +26,139 @@ class ApiController extends BaseController
         "CURRENCYISOCODE" => "required"
     ];
     
-    //SERVICEIDs = 1359,1214,1247,8760,1475,1675,26666
-    //seasonperiod=3952,3970,3993,4215,4334,4351
     
-    //id = 1,17,24,163,189,405,407
-    
-    // 1675 => 2015-04-01 - 2015-09-30   =>>    2015-10-01 - 2016-03-31
-    // 1675 => 2016-04-01 - 2016-09-30   =>>    2016-10-01 - 2017-03-31
-    
-    // 1475 => 2016-12-16 - 2017-01-15   =>>   2017-01-16 - 2017-02-28 
-   
-    
-    
-    // 26666 => 2015-01-09 - 2015-04-15  ==>    2015-04-16 - 2015-09-30
-    
-    // 1359 => 11/05/2017 (05 Nov ) -  12 days/11 nights
-    // 26666 => 04/08/2015 (8 April ) - 04/19/2015 (19th April) - 12 days/11 nights
-    // 
-    // 1475 => 01/11/2017 (11 Jan ) - 01/22/2017 (22th April) - 12 days/11 nights
-    // 
-    // 1675 => 09/25/2015 (25 Sept ) - 10/06/2015 (6th Oct) - 12 days/11 nights
-    // 1675 => 09/25/2016 (25 Sept ) - 10/06/2017 (6th Oct) - 12 days/11 nights
-    
-    
-    
-    /*
-     * 04/08/2015 (8 April ) - 04/19/2015 (19th April) - 12 days/11 nights
-     * [season_period] => 2015-04-15 to 2015-09-29 (15 April to 29 Sept)
-     * 
-     * 
-     * 08 april - 1 day/night - checkin
-     * 09 april - 2nd night
-     * 10 april - 3
-     * 11 april - 4
-     * 12 april - 5
-     * 13 april - 6
-     * 14 april - 7
-     * 15 april - 8
-     * 16 april - 9
-     * 17 april - 10
-     * 18 april - 11 day/night
-     * 19 april - 12 - day checkout
-     */ 
-    //11/05/2017 mm/dd/YY
-    //2015-10-07 YY-MM-DD
-    //04/07/2015 => 2015-04-07
-
-public $requestData = array ( 
-    'IncomingRequest' => array ( 
-        'ROOMS_REQUIRED' => array ( 
-            'ROOM' => array ( 
-                0 => array ( 
-                    'OCCUPANCY' => '3', 
-                    'QUANTITY' => 1, 
-                    'NO_OF_PASSENGERS' => 2, 
-                    'CHILDREN' => array ( 
-                        'CHILD_RATE' => array ( 
-                            'CHILD_QUANTITY' => '0', 
-                            'CHILD_AGE' => '5', 
-                            ),
-                        ), 
-                    ), 
-                /*1 => array ( 
-                    'OCCUPANCY' => '7', 
-                    'QUANTITY' => 1, 
-                    'NO_OF_PASSENGERS' => 1, 
-                    'CHILDREN' => array ( 
-                        'CHILD_RATE' => array ( 
-                            'CHILD_QUANTITY' => '1', 
-                            'CHILD_AGE' => '5', 
-                            ), 
-                        ), 
-                    ), 
-                2 => array ( 
-                    'OCCUPANCY' => '8', 
-                    'QUANTITY' => 1, 
-                    'NO_OF_PASSENGERS' => 4, 
-                    'CHILDREN' => array ( 
-                        'CHILD_RATE' => array ( 
-                            'CHILD_QUANTITY' => '2', 
-                            'CHILD_AGE' => '5', 
-                            ), 
-                        ), 
-                    ), 
-                3 => array ( 
-                    'OCCUPANCY' => '6', 
-                    'QUANTITY' => 1, 
-                    'NO_OF_PASSENGERS' => 15, 
-                    'CHILDREN' => array ( 
-                        'CHILD_RATE' => array ( 
-                            'CHILD_QUANTITY' => '10', 
-                            'CHILD_AGE' => '5', 
-                            ), 
-                        ), 
-                    ), 
-                4 => array ( 
-                    'OCCUPANCY' => '5', 
-                    'QUANTITY' => 1, 
-                    'NO_OF_PASSENGERS' => 4, 
-                    'CHILDREN' => array ( 
-                        'CHILD_RATE' => array ( 
-                            'CHILD_QUANTITY' => '0', 
-                            'CHILD_AGE' => '5', 
-                            ), 
-                        ), 
-                    ), 
-                5 => array ( 
-                    'OCCUPANCY' => '1', 
-                    'QUANTITY' => 1, 
-                    'NO_OF_PASSENGERS' => 2, 
-                    'CHILDREN' => array ( 
-                        'CHILD_RATE' => array ( 
-                            'CHILD_QUANTITY' => '1', 
-                            'CHILD_AGE' => '5', 
-                            ), 
-                        ), 
-                    ), 
-                6 => array ( 
-                    'OCCUPANCY' => '4', 
-                    'QUANTITY' => 1, 
-                    'NO_OF_PASSENGERS' => 3, 
-                    'CHILDREN' => array ( 
-                        'CHILD_RATE' => array ( 
-                            'CHILD_QUANTITY' => '0', 
-                            'CHILD_AGE' => '5', 
-                            ), 
-                        ), 
-                    ), 
-                7 => array ( 
-                    'OCCUPANCY' => '2', 
-                    'QUANTITY' => 1, 
-                    'NO_OF_PASSENGERS' => 2, 
-                    'CHILDREN' => array ( 
-                        'CHILD_RATE' => array ( 
-                            'CHILD_QUANTITY' => '0', 
-                            'CHILD_AGE' => '5', 
-                            ), 
-                        ), 
-                    ),*/ 
-                ), 
-            ), 
-        'VERSION_HISTORY' => array ( 
-            'LANGUAGE' => 'en-GB', 
-            'LICENCE_KEY' => 'A6C2FAAA-62D7-4A1B-9AB5-C6BF801E7803', 
-            ), 
-        'ISMEALPLANSREQUIRED' => 0, 
-        'IMAGENOTREQUIRED' => 1, 
-        'ReturnMatchCode' => 'true', 
-        'SEARCHWITHFACILITIES_OPTIONS' => 'ALL', 
-        'NotesRequired' => false, 
-        'SERVICEIDs' => '26666', 
-        'START_DATE' => '01/10/2017', // 2016-09-25-
-        'NUMBER_OF_NIGHTS' => 3, 
-        'AVAILABLE_ONLY' => false, 
-        'GET_START_PRICE' => true, 
-        'CURRENCY' => 'USD', 
-        'SERVICETYPEID' => 2, 
-        'RETURN_ONLY_NON_ACCOM_SERVICES' => false, 
-        'ROOM_REPLY' => array ( 
-            'ANY_ROOM' => 'true', 
-            ), 
-        'DoNotReturnNonRefundable' => false, 
-        'DoNotReturnWithCancellationPenalty' => false, 
-        'BESTSELLER' => false, 
-        'CLIENT_ID' => 0, 
-        'BOOKING_TYPE_ID' => 0, 
-        'BOOKINGTYPE' => 0, 
-        'PRICETYPE' => 0, 
-        'SERVICETYPERATINGTYPEID' => 0, 
-        'SERVICETYPERATINGID' => 0, 
-        'IsServiceOptionDescriptionRequired' => 'true', 
-        'IsServiceInfoRequired' => 'true', 
-        'ReturnMandatoryExtraPrices' => false, 
-        'NATIONALITYID' => 0, 
-        'ReturnAttachedOptionExtra' => false, 
-        'SERVICESEARCHTYPE' => 'ENHANCED', 
-        'ReturnAppliedOptionChargingPolicyDetails' => false, 
-        ), 
-    );
+    // public $requestData = array ( 
+    //     'IncomingRequest' => array ( 
+    //         'ROOMS_REQUIRED' => array ( 
+    //             'ROOM' => array ( 
+    //                 0 => array ( 
+    //                     'OCCUPANCY' => '3', 
+    //                     'QUANTITY' => 1, 
+    //                     'NO_OF_PASSENGERS' => 2, 
+    //                     'CHILDREN' => array ( 
+    //                         'CHILD_RATE' => array ( 
+    //                             'CHILD_QUANTITY' => '0', 
+    //                             'CHILD_AGE' => '5', 
+    //                             ),
+    //                         ), 
+    //                     ), 
+    //                 1 => array ( 
+    //                     'OCCUPANCY' => '7', 
+    //                     'QUANTITY' => 1, 
+    //                     'NO_OF_PASSENGERS' => 1, 
+    //                     'CHILDREN' => array ( 
+    //                         'CHILD_RATE' => array ( 
+    //                             'CHILD_QUANTITY' => '1', 
+    //                             'CHILD_AGE' => '5', 
+    //                             ), 
+    //                         ), 
+    //                     ), 
+    //                 2 => array ( 
+    //                     'OCCUPANCY' => '8', 
+    //                     'QUANTITY' => 1, 
+    //                     'NO_OF_PASSENGERS' => 4, 
+    //                     'CHILDREN' => array ( 
+    //                         'CHILD_RATE' => array ( 
+    //                             'CHILD_QUANTITY' => '2', 
+    //                             'CHILD_AGE' => '5', 
+    //                             ), 
+    //                         ), 
+    //                     ), 
+    //                 3 => array ( 
+    //                     'OCCUPANCY' => '6', 
+    //                     'QUANTITY' => 1, 
+    //                     'NO_OF_PASSENGERS' => 15, 
+    //                     'CHILDREN' => array ( 
+    //                         'CHILD_RATE' => array ( 
+    //                             'CHILD_QUANTITY' => '10', 
+    //                             'CHILD_AGE' => '5', 
+    //                             ), 
+    //                         ), 
+    //                     ), 
+    //                 4 => array ( 
+    //                     'OCCUPANCY' => '5', 
+    //                     'QUANTITY' => 1, 
+    //                     'NO_OF_PASSENGERS' => 4, 
+    //                     'CHILDREN' => array ( 
+    //                         'CHILD_RATE' => array ( 
+    //                             'CHILD_QUANTITY' => '0', 
+    //                             'CHILD_AGE' => '5', 
+    //                             ), 
+    //                         ), 
+    //                     ), 
+    //                 5 => array ( 
+    //                     'OCCUPANCY' => '1', 
+    //                     'QUANTITY' => 1, 
+    //                     'NO_OF_PASSENGERS' => 2, 
+    //                     'CHILDREN' => array ( 
+    //                         'CHILD_RATE' => array ( 
+    //                             'CHILD_QUANTITY' => '1', 
+    //                             'CHILD_AGE' => '5', 
+    //                             ), 
+    //                         ), 
+    //                     ), 
+    //                 6 => array ( 
+    //                     'OCCUPANCY' => '4', 
+    //                     'QUANTITY' => 1, 
+    //                     'NO_OF_PASSENGERS' => 3, 
+    //                     'CHILDREN' => array ( 
+    //                         'CHILD_RATE' => array ( 
+    //                             'CHILD_QUANTITY' => '0', 
+    //                             'CHILD_AGE' => '5', 
+    //                             ), 
+    //                         ), 
+    //                     ), 
+    //                 7 => array ( 
+    //                     'OCCUPANCY' => '2', 
+    //                     'QUANTITY' => 1, 
+    //                     'NO_OF_PASSENGERS' => 2, 
+    //                     'CHILDREN' => array ( 
+    //                         'CHILD_RATE' => array ( 
+    //                             'CHILD_QUANTITY' => '0', 
+    //                             'CHILD_AGE' => '5', 
+    //                             ), 
+    //                         ), 
+    //                     ), 
+    //                 ), 
+    //             ), 
+    //         'VERSION_HISTORY' => array ( 
+    //             'LANGUAGE' => 'en-GB', 
+    //             'LICENCE_KEY' => 'A6C2FAAA-62D7-4A1B-9AB5-C6BF801E7803', 
+    //             ), 
+    //         'ISMEALPLANSREQUIRED' => 0, 
+    //         'IMAGENOTREQUIRED' => 1, 
+    //         'ReturnMatchCode' => 'true', 
+    //         'SEARCHWITHFACILITIES_OPTIONS' => 'ALL', 
+    //         'NotesRequired' => false, 
+    //         'SERVICEIDs' => '26666', 
+    //         'START_DATE' => '01/10/2017', // 2016-09-25-
+    //         'NUMBER_OF_NIGHTS' => 3, 
+    //         'AVAILABLE_ONLY' => false, 
+    //         'GET_START_PRICE' => true, 
+    //         'CURRENCY' => 'USD', 
+    //         'SERVICETYPEID' => 2, 
+    //         'RETURN_ONLY_NON_ACCOM_SERVICES' => false, 
+    //         'ROOM_REPLY' => array ( 
+    //             'ANY_ROOM' => 'true', 
+    //             ), 
+    //         'DoNotReturnNonRefundable' => false, 
+    //         'DoNotReturnWithCancellationPenalty' => false, 
+    //         'BESTSELLER' => false, 
+    //         'CLIENT_ID' => 0, 
+    //         'BOOKING_TYPE_ID' => 0, 
+    //         'BOOKINGTYPE' => 0, 
+    //         'PRICETYPE' => 0, 
+    //         'SERVICETYPERATINGTYPEID' => 0, 
+    //         'SERVICETYPERATINGID' => 0, 
+    //         'IsServiceOptionDescriptionRequired' => 'true', 
+    //         'IsServiceInfoRequired' => 'true', 
+    //         'ReturnMandatoryExtraPrices' => false, 
+    //         'NATIONALITYID' => 0, 
+    //         'ReturnAttachedOptionExtra' => false, 
+    //         'SERVICESEARCHTYPE' => 'ENHANCED', 
+    //         'ReturnAppliedOptionChargingPolicyDetails' => false, 
+    //         ), 
+    //     );
 
     // public $requestData = array ( 'IncomingRequest' => array ( 'ROOMS_REQUIRED' => array ( 'ROOM' => array ( 0 => array ( 'OCCUPANCY' => '3', 'QUANTITY' => 1, 'NO_OF_PASSENGERS' => 2, 'CHILDREN' => array ( 'CHILD_RATE' => array ( 'CHILD_QUANTITY' => '0', 'CHILD_AGE' => '5', ), ), ), 1 => array ( 'OCCUPANCY' => '7', 'QUANTITY' => 1, 'NO_OF_PASSENGERS' => 1, 'CHILDREN' => array ( 'CHILD_RATE' => array ( 'CHILD_QUANTITY' => '1', 'CHILD_AGE' => '5', ), ), ), 2 => array ( 'OCCUPANCY' => '8', 'QUANTITY' => 1, 'NO_OF_PASSENGERS' => 4, 'CHILDREN' => array ( 'CHILD_RATE' => array ( 'CHILD_QUANTITY' => '2', 'CHILD_AGE' => '5', ), ), ), 3 => array ( 'OCCUPANCY' => '6', 'QUANTITY' => 1, 'NO_OF_PASSENGERS' => 15, 'CHILDREN' => array ( 'CHILD_RATE' => array ( 'CHILD_QUANTITY' => '10', 'CHILD_AGE' => '5', ), ), ), 4 => array ( 'OCCUPANCY' => '5', 'QUANTITY' => 1, 'NO_OF_PASSENGERS' => 4, 'CHILDREN' => array ( 'CHILD_RATE' => array ( 'CHILD_QUANTITY' => '0', 'CHILD_AGE' => '5', ), ), ), 5 => array ( 'OCCUPANCY' => '1', 'QUANTITY' => 1, 'NO_OF_PASSENGERS' => 2, 'CHILDREN' => array ( 'CHILD_RATE' => array ( 'CHILD_QUANTITY' => '1', 'CHILD_AGE' => '5', ), ), ), 6 => array ( 'OCCUPANCY' => '4', 'QUANTITY' => 1, 'NO_OF_PASSENGERS' => 3, 'CHILDREN' => array ( 'CHILD_RATE' => array ( 'CHILD_QUANTITY' => '0', 'CHILD_AGE' => '5', ), ), ), 7 => array ( 'OCCUPANCY' => '2', 'QUANTITY' => 1, 'NO_OF_PASSENGERS' => 2, 'CHILDREN' => array ( 'CHILD_RATE' => array ( 'CHILD_QUANTITY' => '0', 'CHILD_AGE' => '5', ), ), ), ), ), 'VERSION_HISTORY' => array ( 'LANGUAGE' => 'en-GB', 'LICENCE_KEY' => 'A6C2FAAA-62D7-4A1B-9AB5-C6BF801E7803', ), 'ISMEALPLANSREQUIRED' => 0, 'IMAGENOTREQUIRED' => 1, 'ReturnMatchCode' => 'true', 'SEARCHWITHFACILITIES_OPTIONS' => 'ALL', 'NotesRequired' => false, 'SERVICEIDs' => '1210', 'START_DATE' => '10/11/2015', 'NUMBER_OF_NIGHTS' => 1, 'AVAILABLE_ONLY' => false, 'GET_START_PRICE' => true, 'CURRENCY' => 'USD', 'SERVICETYPEID' => 2, 'RETURN_ONLY_NON_ACCOM_SERVICES' => false, 'ROOM_REPLY' => array ( 'ANY_ROOM' => 'true', ), 'DoNotReturnNonRefundable' => false, 'DoNotReturnWithCancellationPenalty' => false, 'BESTSELLER' => false, 'CLIENT_ID' => 0, 'BOOKING_TYPE_ID' => 0, 'BOOKINGTYPE' => 0, 'PRICETYPE' => 0, 'SERVICETYPERATINGTYPEID' => 0, 'SERVICETYPERATINGID' => 0, 'IsServiceOptionDescriptionRequired' => 'true', 'IsServiceInfoRequired' => 'true', 'ReturnMandatoryExtraPrices' => false, 'NATIONALITYID' => 0, 'ReturnAttachedOptionExtra' => false, 'SERVICESEARCHTYPE' => 'ENHANCED', 'ReturnAppliedOptionChargingPolicyDetails' => false, ), );
 
@@ -218,8 +173,8 @@ public $requestData = array (
     public function GetServicesPricesAndAvailability()
     {
 
-         $requestData = json_decode(json_encode($this->requestData), true);
-        //$requestData = json_decode(Input::get('data'), true);
+         // $requestData = json_decode(json_encode($this->requestData), true);
+        $requestData = json_decode(Input::get('data'), true);
 
         $validator = Validator::make($requestData['IncomingRequest'], $this->serviceRules);
         if ($validator->fails()){
