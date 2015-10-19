@@ -14,7 +14,6 @@ use SoapBox\Formatter\Formatter;
 
 class RatesRepository {
 
-    const WITH_CHARGING_POLICY = 1;
 
     public function __construct(Service $service, ExchangeRateRepository $exchangeRateRepository) {
         $this->service = $service;
@@ -68,10 +67,8 @@ class RatesRepository {
         $serviceOptions = $this->serviceOptionsAndRates($service->id, $startDate, $actualEnd);
         
         // Charging Policy -  start
-        if (self::WITH_CHARGING_POLICY == 1) {
-            $pricesBreakup = $this->getPriceBreakupWithSeasonsIdWithinStartandEndDate($service->id, $startDate, $actualEnd, $quantity, $totalNights, 'ServiceRate');
-            $withChargingPolicyPrices = $pricesBreakup['finalPrice'];
-        }
+        $pricesBreakup = $this->getPriceBreakupWithSeasonsIdWithinStartandEndDate($service->id, $startDate, $actualEnd, $quantity, $totalNights, 'ServiceRate');
+        $withChargingPolicyPrices = $pricesBreakup['finalPrice'];       
         // Charging Policy -  End
 
         $respArray["GetServicesPricesAndAvailabilityResult"]["Services"]["PriceAndAvailabilityService"]["ServiceID"] = $service->ts_id;
@@ -84,49 +81,46 @@ class RatesRepository {
             $respArray["GetServicesPricesAndAvailabilityResult"]["Errors"] = (object) array();
             foreach ($serviceOptions as $key => $price) {
                 
-                // Charging Policy -  Start
-                if (self::WITH_CHARGING_POLICY == 1) {
-                    if (!empty($price->policy_id)) {                        
-                        $price->buy_price = $this->applyRatesChargingPolicy($withChargingPolicyPrices, 'buy_price', $price->option_id, $price->buy_price);                        
-                        $price->sell_price = $this->applyRatesChargingPolicy($withChargingPolicyPrices, 'sell_price', $price->option_id, $price->sell_price);
-                    } else if (!empty($price->price_band_id)) {
+                // Charging Policy -  Start                
+                if (!empty($price->policy_id)) {                        
+                    $price->buy_price = $this->applyRatesChargingPolicy($withChargingPolicyPrices, 'buy_price', $price->option_id, $price->buy_price);                        
+                    $price->sell_price = $this->applyRatesChargingPolicy($withChargingPolicyPrices, 'sell_price', $price->option_id, $price->sell_price);
+                } else if (!empty($price->price_band_id)) {
 //                        $price->buy_price = $this->applyPriceBandChargingPolicy($withChargingPolicyPrices, 'buy_price', $price->option_id, $price->buy_price);
 //                        $price->sell_price = $this->applyPriceBandChargingPolicy($withChargingPolicyPrices, 'sell_price', $price->option_id, $price->sell_price);
-                    }
-                }
+                }               
                 // Charging Policy -  End
 
                 if (!isset($totalBuyingPrice[$price->option_id])) {
                     $totalBuyingPrice[$price->option_id] = $totalSellingPrice[$price->option_id] = 0;
                 }
-                $mealPlan = ["MealPlanID" => $price->meal_id, "MealPlanName" => $price->meal_name];
-                $nights = $this->getNightsCount($price->start, $price->end, $startDate, $endDate, $totalNights);
-                // Charging Policy -  Start
-                if (self::WITH_CHARGING_POLICY == 1) {
-                    $totalBuyingPrice[$price->option_id] = ($price->buy_price);
-                    $totalSellingPrice[$price->option_id] = ($price->sell_price);
 
-                    $values = array("MaxChild" => $price->max_children, "MaxAdult" => $price->max_adults,
-                        "Occupancy" => $price->occupancy_id, "Currency" => $toCurrency,
-                        "TotalSellingPrice" => ceil(($totalSellingPrice[$price->option_id]) * $exchangeRate),
-                        "TotalBuyingPrice" => ceil(($totalBuyingPrice[$price->option_id]) * $exchangeRate),
-                        "OptionID" => $price->option_id, "ServiceOptionName" => $price->option_name
-                    );
-                } else {
-                    $totalBuyingPrice[$price->option_id] += ($price->buy_price) * $nights;
-                    $totalSellingPrice[$price->option_id] += ($price->sell_price) * $nights;
-
-                    $values = array("MaxChild" => $price->max_children, "MaxAdult" => $price->max_adults,
-                        "Occupancy" => $price->occupancy_id, "Currency" => $toCurrency,
-                        "TotalSellingPrice" => ceil(($totalSellingPrice[$price->option_id]) * $exchangeRate * $quantity),
-                        "TotalBuyingPrice" => ceil(($totalBuyingPrice[$price->option_id]) * $exchangeRate * $quantity),
-                        "OptionID" => $price->option_id, "ServiceOptionName" => $price->option_name
-                    );
+                $mealPlan = ["MealPlanID" => $price->meal_id, "MealPlanName" =>$price->meal_name, "MealPlanCode" => $price->meal_name.$price->meal_id];
+                $multiplicand = 1;
+                if ($price->price_band_id) {
+                    $multiplicand *= $quantity;
+                } else if ($price->policy_id) {
+                    if ($price->policy_name != "Fast Build") {
+                        $nights = $this->getNightsCount($price->start, $price->end, $startDate, $endDate, $totalNights);
+                        $multiplicand *= $nights*$quantity;
+                    }
                 }
-                // Charging Policy -  End
+                
+                // Charging Policy -  Start                
+                $totalBuyingPrice[$price->option_id] = ($price->buy_price);
+                $totalSellingPrice[$price->option_id] = ($price->sell_price);
+
+                $values = array("MaxChild" => $price->max_children, "MaxAdult" => $price->max_adults,
+                    "Occupancy" => $price->occupancy_id, "Currency" => $toCurrency,
+                    "TotalSellingPrice" => ceil(($totalSellingPrice[$price->option_id]) * $exchangeRate),
+                    "TotalBuyingPrice" => ceil(($totalBuyingPrice[$price->option_id]) * $exchangeRate),
+                    "OptionID" => $price->option_id, "ServiceOptionName" => $price->option_name
+                );                
+                // Charging Policy -  End                
 
                 $respArray["GetServicesPricesAndAvailabilityResult"]["Services"]["PriceAndAvailabilityService"]["ServiceOptions"]["PriceAndAvailabilityResponseServiceOption"][$price->option_id] = $values;
-                $optionPrices[$price->option_id] = ["BuyPrice" => ($price->buy_price * $exchangeRate), "SellPrice" => ($price->sell_price * $exchangeRate), "MealPlan" => $mealPlan];
+                $optionPrices[$price->option_id] = ["BuyPrice" => ($price->buy_price*$exchangeRate), "SellPrice" => ($price->sell_price*$exchangeRate), "MealPlan" => $mealPlan, "ChargingPolicyName" => $price->policy_name];
+        
                 $respArray["GetServicesPricesAndAvailabilityResult"]["Services"]["PriceAndAvailabilityService"]["ServiceOptions"]["PriceAndAvailabilityResponseServiceOption"][$price->option_id]["Prices"]["PriceAndAvailabilityResponsePricing"] = $optionPrices[$price->option_id];
             }
             $priceValues = array_values($respArray["GetServicesPricesAndAvailabilityResult"]["Services"]["PriceAndAvailabilityService"]["ServiceOptions"]["PriceAndAvailabilityResponseServiceOption"]);
@@ -146,10 +140,8 @@ class RatesRepository {
         $serviceExtras = $this->serviceExtrasAndRates($service->id, $startDate, $actualEnd);
                      
         // Charging Policy -  start
-        if (self::WITH_CHARGING_POLICY == 1) {
-            $pricesBreakup = $this->getPriceBreakupWithSeasonsIdWithinStartandEndDate($service->id, $startDate, $actualEnd, $quantity, $nights, 'ServiceExtra');
-            $withChargingPolicyPrices = $pricesBreakup['finalPrice'];
-        }
+        $pricesBreakup = $this->getPriceBreakupWithSeasonsIdWithinStartandEndDate($service->id, $startDate, $actualEnd, $quantity, $nights, 'ServiceExtra');
+        $withChargingPolicyPrices = $pricesBreakup['finalPrice'];
         // Charging Policy -  End
 
 
@@ -175,52 +167,30 @@ class RatesRepository {
 
             foreach ($serviceExtras as $key => $extra) {
                 
-                // Charging Policy -  Start
-                if (self::WITH_CHARGING_POLICY == 1) {
-                    if (!empty($extra->policy_id)) {                        
-                        $extra->buy_price = $this->applyRatesChargingPolicy($withChargingPolicyPrices, 'buy_price', $extra->extra_id, $extra->buy_price);
-                        $extra->sell_price = $this->applyRatesChargingPolicy($withChargingPolicyPrices, 'sell_price', $extra->extra_id, $extra->sell_price);
-                    } else if (!empty($price->price_band_id)) {
+                // Charging Policy -  Start                
+                if (!empty($extra->policy_id)) {                        
+                    $extra->buy_price = $this->applyRatesChargingPolicy($withChargingPolicyPrices, 'buy_price', $extra->extra_id, $extra->buy_price);
+                    $extra->sell_price = $this->applyRatesChargingPolicy($withChargingPolicyPrices, 'sell_price', $extra->extra_id, $extra->sell_price);
+                } else if (!empty($price->price_band_id)) {
 //                        $extra->buy_price = $this->applyPriceBandChargingPolicy($withChargingPolicyPrices, 'buy_price', $extra->extra_id, $extra->buy_price);
 //                        $extra->sell_price = $this->applyPriceBandChargingPolicy($withChargingPolicyPrices, 'sell_price', $extra->extra_id, $extra->sell_price);
-                    }
-                }
+                }                                
+                $value = array(
+                    "ExtraMandatory" => false,
+                    "OccupancyTypeID" => 0,
+                    "ServiceTypeTypeID" => 1,
+                    "ServiceTypeTypeName" => "Others",
+                    "MaxAdults" => 100,
+                    "MaxChild" => 0,
+                    "MinAdults" => 0,
+                    "MinChild" => 0,
+                    "ChildMaxAge" => 0,
+                    "ServiceExtraId" => $extra->extra_tsid,
+                    "ServiceExtraCode" => $extra->extra_id,
+                    "ServiceTypeExtraName" => $extra->extra_name,
+                    "TOTALPRICE" => ceil($extra->sell_price * $exchangeRate)
+                );
                 // Charging Policy -  End
-                
-                if (self::WITH_CHARGING_POLICY == 1) {
-                    $value = array(
-                        "ExtraMandatory" => false,
-                        "OccupancyTypeID" => 0,
-                        "ServiceTypeTypeID" => 1,
-                        "ServiceTypeTypeName" => "Others",
-                        "MaxAdults" => 100,
-                        "MaxChild" => 0,
-                        "MinAdults" => 0,
-                        "MinChild" => 0,
-                        "ChildMaxAge" => 0,
-                        "ServiceExtraId" => $extra->extra_tsid,
-                        "ServiceExtraCode" => $extra->extra_id,
-                        "ServiceTypeExtraName" => $extra->extra_name,
-                        "TOTALPRICE" => ceil($extra->sell_price * $exchangeRate)
-                    );
-                } else {
-                    $value = array(
-                        "ExtraMandatory" => false,
-                        "OccupancyTypeID" => 0,
-                        "ServiceTypeTypeID" => 1,
-                        "ServiceTypeTypeName" => "Others",
-                        "MaxAdults" => 100,
-                        "MaxChild" => 0,
-                        "MinAdults" => 0,
-                        "MinChild" => 0,
-                        "ChildMaxAge" => 0,
-                        "ServiceExtraId" => $extra->extra_tsid,
-                        "ServiceExtraCode" => $extra->extra_id,
-                        "ServiceTypeExtraName" => $extra->extra_name,
-                        "TOTALPRICE" => ceil($extra->sell_price * $exchangeRate * $nights)
-                    );
-                }
-                
                
                 $respArray["ServiceExtrasAndPricesResponse"]["ResponseList"]["ServiceExtras"][] = $value;
                 $price = array(
@@ -393,7 +363,7 @@ Checkout              = date : 2015-04-19 (19 April) - day
 
             $i++;
         }
-//print_r($priceWithChargingPolicy) ;
+print_r($priceWithChargingPolicy) ;
         return isset($priceWithChargingPolicy) ? $priceWithChargingPolicy : false;
     }
 
