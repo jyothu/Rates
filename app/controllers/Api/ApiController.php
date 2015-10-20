@@ -51,11 +51,13 @@ class ApiController extends BaseController
         {
             if (isset($requestData['IncomingRequest']["ROOMS_REQUIRED"]["ROOM"]["QUANTITY"])) {
                 $quantity = $requestData['IncomingRequest']["ROOMS_REQUIRED"]["ROOM"]["QUANTITY"];
+                $noOfPeople = $requestData['IncomingRequest']["ROOMS_REQUIRED"]["ROOM"]["NO_OF_PASSENGERS"];
             } else {
-                $quantity = $requestData['IncomingRequest']["ROOMS_REQUIRED"]["ROOM"][0]["QUANTITY"];  
+                $quantity = $requestData['IncomingRequest']["ROOMS_REQUIRED"]["ROOM"][0]["QUANTITY"];
+                $noOfPeople = $requestData['IncomingRequest']["ROOMS_REQUIRED"]["ROOM"][0]["NO_OF_PASSENGERS"]; 
             }
             
-            $response = $this->apiService->collectServicePrices($requestData['IncomingRequest']['SERVICEIDs'], $requestData['IncomingRequest']['START_DATE'], $requestData['IncomingRequest']['NUMBER_OF_NIGHTS'], $requestData['IncomingRequest']["CURRENCY"], $quantity);
+            $response = $this->apiService->collectServicePrices($requestData['IncomingRequest']['SERVICEIDs'], $requestData['IncomingRequest']['START_DATE'], $requestData['IncomingRequest']['NUMBER_OF_NIGHTS'], $requestData['IncomingRequest']["CURRENCY"], $quantity, $noOfPeople);
             
             if( !$this->apiService->isRatesAvailableLocally )
             {
@@ -106,7 +108,7 @@ class ApiController extends BaseController
         }
         else 
         {   
-            $response = $this->apiService->collectExtraPrices($extraRequest['IncomingRequest']['SERVICEID'], $extraRequest['IncomingRequest']['FROMDATE'], $extraRequest['IncomingRequest']['TODATE'], $extraRequest["IncomingRequest"]["CURRENCYISOCODE"], $extraRequest['IncomingRequest']["ExtrasRequired"]["ExtraDetail"]["Quantity"]);
+            $response = $this->apiService->collectExtraPrices($extraRequest['IncomingRequest']['SERVICEID'], $extraRequest['IncomingRequest']['FROMDATE'], $extraRequest['IncomingRequest']['TODATE'], $extraRequest["IncomingRequest"]["CURRENCYISOCODE"], $extraRequest['IncomingRequest']["ExtrasRequired"]["ExtraDetail"]["Quantity"], $extraRequest['IncomingRequest']["ExtrasRequired"]["ExtraDetail"]["Adults"]);
             if( !$this->apiService->isRatesAvailableLocally )
             {
                 // $funcName = __FUNCTION__;

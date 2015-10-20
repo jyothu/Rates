@@ -41,28 +41,28 @@ class RatesRepository {
     }
 
     // Calculating multiplicand with respect to either charging policy or Price bands.
-    public function multiplicandByChargingPolicy($policyObj, $startDate, $endDate, $quantity, $totalNights) {
+    public function multiplicandByChargingPolicy($policyObj, $startDate, $endDate, $quantity, $noOfPeople, $totalNights) {
         $multiplicand = 1;
         if ($policyObj->price_band_id) {
-            $multiplicand *= $quantity;
+            $multiplicand *= $noOfPeople;
         } else if ($policyObj->policy_id) {
             if ($policyObj->policy_name != "Fast Build") {
                 $isRoomBased = $policyObj->room_based; // 1= yes
                 $dayDuration = $policyObj->day_duration; // 1= yes
-                $nights = $this->getNightsCount($policyObj->start, $policyObj->end, $startDate, $endDate, $totalNights);
+                $nights = $this->getNightsCount($policyObj->start, $policyObj->end, $startDate, $endDate, $noOfPeople, $totalNights);
                 if ($isRoomBased == '1') { // unit/room based
                     if ($dayDuration == '1') { // per unit/room per day/night
-                        $multiplicand *= $nights;
+                        $multiplicand *= $nights*$quantity;
                     } else { // per unit/room per N day/night
                         $nnights = ceil($nights / $dayDuration);
-                        $multiplicand *= $nnights;
+                        $multiplicand *= $nnights*$quantity;
                     }
                 } else { // person based 
                     if ($dayDuration == '1') {  // per person per day/night
-                        $multiplicand *= $quantity * $nights;
+                        $multiplicand *= $noOfPeople*$nights;
                     } else {  // per person per  N day/night     
                         $nnights = ceil($nights / $dayDuration);
-                        $multiplicand *= $quantity * $nnights;
+                        $multiplicand *= $noOfPeople*$nnights;
                     }
                 }
             }
@@ -70,9 +70,9 @@ class RatesRepository {
         return $multiplicand;
     }
 
-    public function getNightsCount($seasonStart, $seasonEnd, $dayStart, $dayEnd, $totalNights) {
+    public function getNightsCount($seasonStart, $seasonEnd, $dayStart, $dayEnd, $noOfPeople, $totalNights) {
         $seasonStart = Carbon::parse($seasonStart);
-        $seasonEnd = Carbon::parse($seasonEnd);
+        $seasonEnd = Carbon::parse($seasonEnd)->addDay();
         $dayStart = Carbon::parse($dayStart);
         $dayEnd = Carbon::parse($dayEnd);
 
@@ -86,7 +86,7 @@ class RatesRepository {
         return ($totalNights > 1 && $nights == 0) ? $nights + 1 : $nights;
     }
 
-    public function calculateTotalServiceRate($service, $startDate, $toCurrency, $quantity, $totalNights) {
+    public function calculateTotalServiceRate($service, $startDate, $toCurrency, $quantity, $noOfPeople, $totalNights) {
         $exchangeRate = $this->exchangeRateRepository->exchangeRate($service->currency->code, $toCurrency);
         
         $carbonEnd = Carbon::parse($startDate)->addDays($totalNights);
@@ -110,7 +110,7 @@ class RatesRepository {
                 }
 
                 $mealPlan = ["MealPlanID" => $price->meal_id, "MealPlanName" =>$price->meal_name, "MealPlanCode" => $price->meal_name.$price->meal_id];
-                $multiplicand = $this->multiplicandByChargingPolicy($price, $startDate, $endDate, $quantity, $totalNights);
+                $multiplicand = $this->multiplicandByChargingPolicy($price, $startDate, $endDate, $quantity, $noOfPeople, $totalNights);
                 $totalBuyingPrice[$price->option_id] = ($price->buy_price)*$multiplicand;
                 $totalSellingPrice[$price->option_id] = ($price->sell_price)*$multiplicand;
 
@@ -133,7 +133,7 @@ class RatesRepository {
         return $respArray;
     }
 
-    function calculateServiceExtraRate($service, $startDate, $endDate, $toCurrency, $quantity) {
+    function calculateServiceExtraRate($service, $startDate, $endDate, $toCurrency, $quantity, $noOfPeople) {
 
         $exchangeRate = $this->exchangeRateRepository->exchangeRate($service->currency->code, $toCurrency);
         $carbonEnd = Carbon::parse($endDate);
@@ -163,7 +163,7 @@ class RatesRepository {
             $respArray["ServiceExtrasAndPricesResponse"] = $responseValue;
 
             foreach ($serviceExtras as $key => $extra) {
-                $multiplicand = $this->multiplicandByChargingPolicy($extra, $startDate, $endDate, $quantity, $totalNights);
+                $multiplicand = $this->multiplicandByChargingPolicy($extra, $startDate, $endDate, $quantity, $noOfPeople, $totalNights);
                 
                 $value = array(
                     "ExtraMandatory" => false,
