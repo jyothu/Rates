@@ -56,10 +56,12 @@ class ApiController extends BaseController
             }
             
             $response = $this->apiService->collectServicePrices($requestData['IncomingRequest']['SERVICEIDs'], $requestData['IncomingRequest']['START_DATE'], $requestData['IncomingRequest']['NUMBER_OF_NIGHTS'], $requestData['IncomingRequest']["CURRENCY"], $quantity);
+            
             if( !$this->apiService->isRatesAvailableLocally )
             {
-                $funcName = __FUNCTION__;
-                $response = $this->tsService->pullRatesFromTravelStudio($funcName, $requestData);
+                // $funcName = __FUNCTION__;
+                // $response = $this->tsService->pullRatesFromTravelStudio($funcName, $requestData);
+                $response = $respArray["GetServicesPricesAndAvailabilityResult"]["Errors"] = json_decode(json_encode(['Error' => [ 'Description' => 'Service not found']]));
             }
 
             if (isset($response)){
@@ -107,8 +109,18 @@ class ApiController extends BaseController
             $response = $this->apiService->collectExtraPrices($extraRequest['IncomingRequest']['SERVICEID'], $extraRequest['IncomingRequest']['FROMDATE'], $extraRequest['IncomingRequest']['TODATE'], $extraRequest["IncomingRequest"]["CURRENCYISOCODE"], $extraRequest['IncomingRequest']["ExtrasRequired"]["ExtraDetail"]["Quantity"]);
             if( !$this->apiService->isRatesAvailableLocally )
             {
-                $funcName = __FUNCTION__;
-                $response = $this->tsService->pullRatesFromTravelStudio($funcName, $extraRequest);
+                // $funcName = __FUNCTION__;
+                // $response = $this->tsService->pullRatesFromTravelStudio($funcName, $extraRequest);
+            
+                $responseValue = array(
+                    "Errors" => (object) array(),
+                    "ServiceId" => 0,
+                    "ServiceCode" => 0,
+                    "ServiceName" => 0,
+                    "ServiceTypeId" => 0,
+                    "ResponseList" => (object) array()
+                );
+                $response = $respArray["ServiceExtrasAndPricesResponse"] = $responseValue;
             }
 
             if (isset($response)){
