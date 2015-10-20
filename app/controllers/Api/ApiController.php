@@ -63,7 +63,7 @@ class ApiController extends BaseController
             {
                 // $funcName = __FUNCTION__;
                 // $response = $this->tsService->pullRatesFromTravelStudio($funcName, $requestData);
-                $response = $respArray["GetServicesPricesAndAvailabilityResult"]["Errors"] = json_decode(json_encode(['Error' => [ 'Description' => 'Service not found']]));
+                $response["GetServicesPricesAndAvailabilityResult"]["Errors"] = json_decode(json_encode(['Error' => [ 'Description' => 'Service not found']]));
             }
 
             if (isset($response)){
@@ -119,7 +119,7 @@ class ApiController extends BaseController
                     "ServiceTypeId" => 0,
                     "ResponseList" => (object) array()
                 );
-                $response = $respArray["ServiceExtrasAndPricesResponse"] = $responseValue;
+                $response["ServiceExtrasAndPricesResponse"] = $responseValue;
             }
 
             if (isset($response)){

@@ -51,14 +51,14 @@ class RatesRepository {
                 $dayDuration = $policyObj->day_duration; // 1= yes
                 $nights = $this->getNightsCount($policyObj->start, $policyObj->end, $startDate, $endDate, $noOfPeople, $totalNights);
                 if ($isRoomBased == '1') { // unit/room based
-                    if ($dayDuration == '1') { // per unit/room per day/night
+                    if ($dayDuration <= '1') { // per unit/room per day/night
                         $multiplicand *= $nights*$quantity;
                     } else { // per unit/room per N day/night
                         $nnights = ceil($nights / $dayDuration);
                         $multiplicand *= $nnights*$quantity;
                     }
                 } else { // person based 
-                    if ($dayDuration == '1') {  // per person per day/night
+                    if ($dayDuration <= '1') {  // per person per day/night
                         $multiplicand *= $noOfPeople*$nights;
                     } else {  // per person per  N day/night     
                         $nnights = ceil($nights / $dayDuration);
