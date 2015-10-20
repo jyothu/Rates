@@ -23,9 +23,9 @@ return array(
 		'mysql' => array(
 			'driver'    => 'mysql',
 			'host'      => 'localhost',
-			'database'  => 'etrates',
-			'username'  => 'root',
-			'password'  => 'root',
+			'database'  => 'dev-rates',
+			'username'  => 'builder',
+			'password'  => 'tr@velm@ker',
 			'charset'   => 'utf8',
 			'collation' => 'utf8_unicode_ci',
 			'prefix'    => '',
