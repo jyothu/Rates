@@ -37,8 +37,10 @@ class ApiController extends BaseController
 
     public function GetServicesPricesAndAvailability()
     {
-        // $requestData = json_decode(json_encode($this->requestData), true);
+
+         // $requestData = json_decode(json_encode($this->requestData), true);
         $requestData = json_decode(Input::get('data'), true);
+
         $validator = Validator::make($requestData['IncomingRequest'], $this->serviceRules);
         if ($validator->fails()){
             foreach ($validator->errors()->all() as $key => $message) {
@@ -50,7 +52,7 @@ class ApiController extends BaseController
             if (isset($requestData['IncomingRequest']["ROOMS_REQUIRED"]["ROOM"]["QUANTITY"])) {
                 $quantity = $requestData['IncomingRequest']["ROOMS_REQUIRED"]["ROOM"]["QUANTITY"];
             } else {
-                $quantity = $requestData['IncomingRequest']["ROOMS_REQUIRED"]["ROOM"][0]["QUANTITY"];                
+                $quantity = $requestData['IncomingRequest']["ROOMS_REQUIRED"]["ROOM"][0]["QUANTITY"];  
             }
             
             $response = $this->apiService->collectServicePrices($requestData['IncomingRequest']['SERVICEIDs'], $requestData['IncomingRequest']['START_DATE'], $requestData['IncomingRequest']['NUMBER_OF_NIGHTS'], $requestData['IncomingRequest']["CURRENCY"], $quantity);
@@ -66,25 +68,28 @@ class ApiController extends BaseController
         }
     }
 
-    // public $extraRequest = array("IncomingRequest" => 
-    //     array( "Authenticate" => 
-    //         array("LICENSEKEY" => "A6C2FAAA-62D7-4A1B-9AB5-C6BF801E7803", "PASSENGERID" => "0", "Connector" => "enmTS"),
-    //         "BOOKING_TYPE_ID" => 0 ,
-    //         "PRICE_TYPE_ID" => 0,
-    //         "PriceCode" => 0,
-    //         "SERVICEID" => 1210,
-    //         "FROMDATE" => "2015-04-01",
-    //         "TODATE" => "2015-04-02",
-    //         "ReturnLinkedServiceOptions" => false,
-    //         "IGNORECHILDAGE" => false,
-    //         "RETURNONLYNONACCOMODATIONSERVICES" => true,
-    //         "APPLYEXCHANGERATES" => true,
-    //         "CURRENCYISOCODE" => "EUR" ,
-    //         "ClientId" => 0,
-    //         "ReturnAppliedChargingPolicyDetails" => true,
-    //         "ExtrasRequired" => array("ExtraDetail" => array("OccupancyID" => 1, "Quantity" => 2, "Adults" => 2))
-    //     )
-    // );
+     // public $extraRequest = array("IncomingRequest" => 
+     //     array( "Authenticate" => 
+     //         array("LICENSEKEY" => "A6C2FAAA-62D7-4A1B-9AB5-C6BF801E7803", "PASSENGERID" => "0", "Connector" => "enmTS"),
+     //         "BOOKING_TYPE_ID" => 0 ,
+     //         "PRICE_TYPE_ID" => 0,
+     //         "PriceCode" => 0,
+     //         "SERVICEID" => 1475,
+     //         "FROMDATE" => "2017-01-11",
+     //         "TODATE" => "2017-01-22",
+     //        "SERVICEID" => 1210,
+     //        "FROMDATE" => "2015-04-01",
+     //        "TODATE" => "2015-04-02",
+     //         "ReturnLinkedServiceOptions" => false,
+     //         "IGNORECHILDAGE" => false,
+     //         "RETURNONLYNONACCOMODATIONSERVICES" => true,
+     //         "APPLYEXCHANGERATES" => true,
+     //         "CURRENCYISOCODE" => "EUR" ,
+     //         "ClientId" => 0,
+     //         "ReturnAppliedChargingPolicyDetails" => true,
+     //         "ExtrasRequired" => array("ExtraDetail" => array("OccupancyID" => 1, "Quantity" => 2, "Adults" => 2))
+     //     )
+     // );
 
     public function GetServiceExtraPrices()
     {

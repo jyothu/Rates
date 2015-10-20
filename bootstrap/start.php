@@ -26,7 +26,7 @@ $app = new Illuminate\Foundation\Application;
 
 $env = $app->detectEnvironment(array(
 
-    'local' => array('shan.compassites.lan', 'senthil.compassites.lan', "jyothish-HP-Pavilion-15-Notebook-PC"), // use hostname command in the terminal to get your hostname
+    'local' => array('shan.compassites.lan', 'senthil.compassites.lan', "jyothish-HP-Pavilion-15-Notebook-PC", "gulmohar-Lenovo-G50-70"), // use hostname command in the terminal to get your hostname
     'homestead' => array('homestead'),
     'debugging' => array('jeevan-Vostro-2520'),
 
