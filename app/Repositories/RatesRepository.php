@@ -33,7 +33,7 @@ class RatesRepository {
     }
     public function serviceExtrasAndRates($serviceId, $startDate, $endDate)
     {
-        return DB::select("select buy_price, sell_price, service_extras.name as extra_name, season_period_id, start, end, price_bands.id as price_band_id, charging_policies.id as policy_id, charging_policies.ts_id as policy_tsid, charging_policies.name as policy_name, charging_policies.room_based as room_based, charging_policies.day_duration as day_duration, priceable_id as extra_id, prices.id as price_id, service_extras.ts_id as extra_tsid from prices join service_extras on (prices.priceable_id = service_extras.id AND priceable_type LIKE '%ServiceExtra') join  season_periods on (prices.season_period_id=season_periods.id) join  ( service_price_bands join price_bands on (service_price_bands.price_band_id = price_bands.id) ) on (service_price_bands.price_id = prices.id) left join ( service_policies join charging_policies on (service_policies.charging_policy_id = charging_policies.id)) on (service_policies.price_id = prices.id) WHERE prices.service_id=? AND season_period_id IN (select id from season_periods where  start<=? AND end>=? OR start<=? AND end>=?) and service_extras.status=?", [$serviceId, $startDate, $startDate, $endDate, $endDate, 1]);
+        return DB::select("select buy_price, sell_price, service_extras.name as extra_name, season_period_id, start, end, price_bands.id as price_band_id, charging_policies.id as policy_id, charging_policies.ts_id as policy_tsid, charging_policies.name as policy_name, charging_policies.room_based as room_based, charging_policies.day_duration as day_duration, priceable_id as extra_id, prices.id as price_id, service_extras.ts_id as extra_tsid from prices join service_extras on (prices.priceable_id = service_extras.id AND priceable_type LIKE '%ServiceExtra') join season_periods on (prices.season_period_id=season_periods.id) left join ( service_price_bands join price_bands on (service_price_bands.price_band_id = price_bands.id) ) on (service_price_bands.price_id = prices.id) left join ( service_policies join charging_policies on (service_policies.charging_policy_id = charging_policies.id)) on (service_policies.price_id = prices.id) WHERE prices.service_id=? AND season_period_id IN (select id from season_periods where  start<=? AND end>=? OR start<=? AND end>=?) and service_extras.status=?", [$serviceId, $startDate, $startDate, $endDate, $endDate, 1]);
     }
 
     public function getServiceWithCurrency($serviceId) {
@@ -133,7 +133,7 @@ class RatesRepository {
         return $respArray;
     }
 
-    function calculateServiceExtraRate($service, $startDate, $endDate, $toCurrency, $quantity, $noOfPeople) {
+    function calculateServiceExtraRate($service, $startDate, $endDate, $toCurrency, $noOfPeople) {
 
         $exchangeRate = $this->exchangeRateRepository->exchangeRate($service->currency->code, $toCurrency);
         $carbonEnd = Carbon::parse($endDate);
@@ -141,7 +141,6 @@ class RatesRepository {
         $actualEnd = $carbonEnd->subDay()->format('Y-m-d');
         $startDate = Carbon::parse($startDate)->format('Y-m-d');
         $serviceExtras = $this->serviceExtrasAndRates($service->id, $startDate, $actualEnd);
-
         if (empty($serviceExtras) || is_null($serviceExtras)) {
             $responseValue = array(
                 "Errors" => (object) array(),
@@ -163,7 +162,7 @@ class RatesRepository {
             $respArray["ServiceExtrasAndPricesResponse"] = $responseValue;
 
             foreach ($serviceExtras as $key => $extra) {
-                $multiplicand = $this->multiplicandByChargingPolicy($extra, $startDate, $endDate, $quantity, $noOfPeople, $totalNights);
+                $multiplicand = $this->multiplicandByChargingPolicy($extra, $startDate, $endDate, 1, $noOfPeople, $totalNights);
                 
                 $value = array(
                     "ExtraMandatory" => false,

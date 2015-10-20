@@ -27,12 +27,12 @@ class ApiService
         }
     }
 
-    function collectExtraPrices($serviceTsId, $startDate, $endDate, $currency, $quantity, $noOfPeople)
+    function collectExtraPrices($serviceTsId, $startDate, $endDate, $currency, $noOfPeople)
     {
         $this->isRatesAvailableLocally = false;
         $service = $this->ratesRepository->getServiceByTsId($serviceTsId); 
         if ($service !== null) {
-            $data = $this->ratesRepository->calculateServiceExtraRate($service, $startDate, $endDate, $currency, $quantity, $noOfPeople);
+            $data = $this->ratesRepository->calculateServiceExtraRate($service, $startDate, $endDate, $currency, $noOfPeople);
             $this->isRatesAvailableLocally = true;
             return $data;
         }

@@ -74,24 +74,21 @@ class ApiController extends BaseController
 
      // public $extraRequest = array("IncomingRequest" => 
      //     array( "Authenticate" => 
-     //         array("LICENSEKEY" => "A6C2FAAA-62D7-4A1B-9AB5-C6BF801E7803", "PASSENGERID" => "0", "Connector" => "enmTS"),
-     //         "BOOKING_TYPE_ID" => 0 ,
-     //         "PRICE_TYPE_ID" => 0,
-     //         "PriceCode" => 0,
-     //         "SERVICEID" => 1475,
-     //         "FROMDATE" => "2017-01-11",
-     //         "TODATE" => "2017-01-22",
+     //        array("LICENSEKEY" => "A6C2FAAA-62D7-4A1B-9AB5-C6BF801E7803", "PASSENGERID" => "0", "Connector" => "enmTS"),
+     //        "BOOKING_TYPE_ID" => 0 ,
+     //        "PRICE_TYPE_ID" => 0,
+     //        "PriceCode" => 0,
      //        "SERVICEID" => 1210,
      //        "FROMDATE" => "2015-04-01",
      //        "TODATE" => "2015-04-02",
-     //         "ReturnLinkedServiceOptions" => false,
-     //         "IGNORECHILDAGE" => false,
-     //         "RETURNONLYNONACCOMODATIONSERVICES" => true,
-     //         "APPLYEXCHANGERATES" => true,
-     //         "CURRENCYISOCODE" => "EUR" ,
-     //         "ClientId" => 0,
-     //         "ReturnAppliedChargingPolicyDetails" => true,
-     //         "ExtrasRequired" => array("ExtraDetail" => array("OccupancyID" => 1, "Quantity" => 2, "Adults" => 2))
+     //        "ReturnLinkedServiceOptions" => false,
+     //        "IGNORECHILDAGE" => false,
+     //        "RETURNONLYNONACCOMODATIONSERVICES" => true,
+     //        "APPLYEXCHANGERATES" => true,
+     //        "CURRENCYISOCODE" => "EUR" ,
+     //        "ClientId" => 0,
+     //        "ReturnAppliedChargingPolicyDetails" => true,
+     //        "ExtrasRequired" => array("ExtraDetail" => array("OccupancyID" => 1, "Quantity" => 10, "Adults" => 2))
      //     )
      // );
 
@@ -108,7 +105,7 @@ class ApiController extends BaseController
         }
         else 
         {   
-            $response = $this->apiService->collectExtraPrices($extraRequest['IncomingRequest']['SERVICEID'], $extraRequest['IncomingRequest']['FROMDATE'], $extraRequest['IncomingRequest']['TODATE'], $extraRequest["IncomingRequest"]["CURRENCYISOCODE"], $extraRequest['IncomingRequest']["ExtrasRequired"]["ExtraDetail"]["Quantity"], $extraRequest['IncomingRequest']["ExtrasRequired"]["ExtraDetail"]["Adults"]);
+            $response = $this->apiService->collectExtraPrices($extraRequest['IncomingRequest']['SERVICEID'], $extraRequest['IncomingRequest']['FROMDATE'], $extraRequest['IncomingRequest']['TODATE'], $extraRequest["IncomingRequest"]["CURRENCYISOCODE"], $extraRequest['IncomingRequest']["ExtrasRequired"]["ExtraDetail"]["Adults"]);
             if( !$this->apiService->isRatesAvailableLocally )
             {
                 // $funcName = __FUNCTION__;
