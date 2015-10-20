@@ -24,6 +24,7 @@ use DateInterval;
 use DatePeriod;
 
 class FastBuildRepository {
+    const POLICYID = 38;
 
     function createCity($params) {
         $tsId = $params["region_tsid"];
@@ -53,7 +54,6 @@ class FastBuildRepository {
             $currency = $params["currency"];
             $supplierName = $params["supplier_name"];
             $mealName = $params["meals"];
-            $policyId = 38; // Fast Build
             $mealObj = null;
             $serviceTypeObj = ServiceType::where('ts_id', $serviceTypeTsId)->first();
             $currencyObj = Currency::where('code', $currency)->first();
@@ -114,7 +114,7 @@ class FastBuildRepository {
                     }
                     // Find or Create Service Policies
                     if ($priceObj) {
-                        $policyParams = array('charging_policy_id' => $policyId, 'price_id' => $priceObj->id);
+                        $policyParams = array('charging_policy_id' => self::POLICYID, 'price_id' => $priceObj->id);
                         ServicePolicy::firstOrCreate($policyParams);
                     }
                 }

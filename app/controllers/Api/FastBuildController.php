@@ -9,7 +9,6 @@ use Response;
 use App\Repositories\FastBuildRepository;
 
 class FastBuildController extends BaseController {
-
     // public $fastBuildRules = [
     //        'SERVICEIDs' => 'required',
     //        'SERVICETYPEID' => 'required|exists:service_types,id',
@@ -23,7 +22,7 @@ class FastBuildController extends BaseController {
 
     // public $requestData = array(
     // 	"fast_build_type" => "service",
-    //     "service_tsid" => 500012,
+    //     "service_tsid" => 500010,
     //     "service_name" => "Fast Build Testing 2",
     //     "supplier_name" => "Enchanting Travels",
     //     "service_type" => 2,
@@ -32,17 +31,17 @@ class FastBuildController extends BaseController {
     //     "region_tsid" => 100000,
     //     "option" => array(
     //     	array(
-	   //          "option_name" => "Service Option Fast Build 1",
+	   //          "option_name" => "Service Option Fast Build Testing",
 	   //          "occupancy_id" => 2,
 	   //          "start_date" => "2015-10-10",
 	   //          "end_date" => "2015-10-20",
-	   //          "buy_price" => 13000,
-	   //          "sell_price" => 30000
+	   //          "buy_price" => 1300,
+	   //          "sell_price" => 1500
     //         )
     //     ),
-    //     "region_tsid" => 100000,
-    //     "region_name" => "Murugeshpalay",
-    //     "parent_region_id" => 11016
+        // "region_tsid" => 100000,
+        // "region_name" => "Murugeshpalay",
+        // "parent_region_id" => 11016
     // );
 
     public function createServiceOrCity() {
