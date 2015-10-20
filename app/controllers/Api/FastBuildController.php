@@ -28,7 +28,7 @@ class FastBuildController extends BaseController {
     //     "service_type" => 2,
     //     "meals" => "Breakfast",
     //     "currency" => "USD",
-    //     "region_tsid" => 100000,
+    //     "region_tsid" => 10000000,
     //     "option" => array(
     //     	array(
 	   //          "option_name" => "Service Option Fast Build Testing",

@@ -24,7 +24,7 @@ use DateInterval;
 use DatePeriod;
 
 class FastBuildRepository {
-    const POLICYID = 38;
+    const POLICYID = 38; // Fast 
 
     function createCity($params) {
         $tsId = $params["region_tsid"];
@@ -37,7 +37,7 @@ class FastBuildRepository {
         try {
             $regionObj = Region::firstOrCreate($regionParams);
             $response = array("Success" => "City has been created Successfully!");
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             $response = array("Error" => "Caught exception: " . $e->getMessage());
         }
 
@@ -121,7 +121,7 @@ class FastBuildRepository {
             }
 
             $response = array('Success' => "Service " . $serviceObj->ts_id . " / " . $serviceObj->name . " has been created...\n");
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             $response = array("Error" => "Caught exception: " . $e->getMessage());
         }
 
