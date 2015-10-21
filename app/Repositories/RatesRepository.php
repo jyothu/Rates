@@ -51,6 +51,13 @@ class RatesRepository {
                 $isRoomBased = $policyObj->room_based; // 1= yes
                 $dayDuration = $policyObj->day_duration; // 1= yes
                 $nights = $this->getNightsCount($policyObj->start, $policyObj->end, $startDate, $endDate, $noOfPeople, $totalNights);
+                
+                if (preg_match("/day/i",$policyObj->policy_name)) {
+                    $nights += 1;
+                } else if($nights == 0) {
+                    $nights = 1;
+                }
+                
                 if ($isRoomBased == '1') { // unit/room based
                     if ($dayDuration <= '1') { // per unit/room per day/night
                         $multiplicand *= $nights*$quantity;
@@ -165,7 +172,8 @@ class RatesRepository {
             $respArray["ServiceExtrasAndPricesResponse"] = $responseValue;
 
             foreach ($serviceExtras as $key => $extra) {
-                $multiplicand = $this->multiplicandByChargingPolicy($extra, $startDate, $endDate, 1, $noOfPeople, $totalNights);
+                //$multiplicand = $this->multiplicandByChargingPolicy($extra, $startDate, $endDate, 1, $noOfPeople, $totalNights);
+                $multiplicand = $this->multiplicandByChargingPolicy($extra, $startDate, $endDate, 1, 1, $totalNights);
                 
                 $value = array(
                     "ExtraMandatory" => false,
