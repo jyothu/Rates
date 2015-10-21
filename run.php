@@ -62,18 +62,19 @@ foreach($csv as $row) {
     if ($occupancyId) {
 	    $occupancyObj = Models\Occupancy::firstOrCreate(array('id' => $occupancyId, 'name' => $occupancyName));
     }
+
+    $mealObj = null;
     if ($mealName) {
 	    $mealObj = Models\Meal::firstOrCreate(array('name' => $mealName));	
     }
     
     // Find or Create Service
     $serviceParams = array('ts_id' => $serviceId,
-    	'name' => $serviceName,
+    	'name' => trim($serviceName),
     	'region_id' => $regionObj->id,
     	'currency_id' => $currencyObj->id,
     	'service_type_id' => $serviceTypeObj->id,
-    	'supplier_id' => $supplierObj->id,
-    	'name' => $serviceName
+    	'supplier_id' => $supplierObj->id
     );
     $serviceObj = Models\Service::firstOrCreate( $serviceParams );
     
@@ -132,7 +133,9 @@ foreach($csv as $row) {
 	    $optionObj = $serviceObj->serviceOptions()->firstOrCreate( $serviceOptionParams );
         
         // Find or Create Meal Option
-	    $optionObj->mealOptions()->firstOrCreate( ['meal_id' => $mealObj->id] );
+        if ($mealObj) {
+    	    $optionObj->mealOptions()->firstOrCreate( ['meal_id' => $mealObj->id] );
+        }
     }
 
     // Find or Create Prices 
