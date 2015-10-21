@@ -50,9 +50,13 @@ class RatesRepository {
                 $isRoomBased = $policyObj->room_based; // 1= yes
                 $dayDuration = $policyObj->day_duration; // 1= yes
                 $nights = $this->getNightsCount($policyObj->start, $policyObj->end, $startDate, $endDate, $noOfPeople, $totalNights);
+                
                 if (preg_match("/day/i",$policyObj->policy_name)) {
                     $nights += 1;
+                } else if($nights == 0) {
+                    $nights = 1;
                 }
+                
                 if ($isRoomBased == '1') { // unit/room based
                     if ($dayDuration <= '1') { // per unit/room per day/night
                         $multiplicand *= $nights*$quantity;
