@@ -169,7 +169,8 @@ class RatesRepository {
             $respArray["ServiceExtrasAndPricesResponse"] = $responseValue;
 
             foreach ($serviceExtras as $key => $extra) {
-                $multiplicand = $this->multiplicandByChargingPolicy($extra, $startDate, $endDate, 1, $noOfPeople, $totalNights);
+                //$multiplicand = $this->multiplicandByChargingPolicy($extra, $startDate, $endDate, 1, $noOfPeople, $totalNights);
+                $multiplicand = $this->multiplicandByChargingPolicy($extra, $startDate, $endDate, 1, 1, $totalNights);
                 
                 $value = array(
                     "ExtraMandatory" => false,
