@@ -66,7 +66,7 @@ class TravelStudioService
     private function ratesFromTravelStudio($funcName, $params, $isPreviousYear=false, $count=0) {
         $response = $this->soapClient()->$funcName($params);
         $this->getErrorsFromResponse($response);
-        dd($response);
+
         if ($this->isServiceNotFound && $count == 0) {
             $params["IncomingRequest"]["START_DATE"] = Carbon::parse($params["IncomingRequest"]["START_DATE"])->subYear(1)->format('Y-m-d');
             $this->ratesFromTravelStudio($funcName, $params, true, $count++);
