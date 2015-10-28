@@ -124,6 +124,7 @@ class RatesRepository {
                     $totalSellingPrice[$price->option_id] = ($price->sell_price)*$multiplicand;
 
                     $values = array("MaxChild" => $price->max_children, "MaxAdult" => $price->max_adults,
+                        "OptionOccupancy" => array("Adults" => $price->max_adults, "Children" => $price->max_children),
                         "Occupancy" => $price->occupancy_id, "Currency" => $toCurrency,
                         "TotalSellingPrice" => ceil(($totalSellingPrice[$price->option_id])*$exchangeRate),
                         "TotalBuyingPrice" => ceil(($totalBuyingPrice[$price->option_id])*$exchangeRate),
