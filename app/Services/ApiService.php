@@ -16,14 +16,23 @@ class ApiService
         $this->travelStudioService = $travelStudioService;
     }
 
-    function collectServicePrices( $serviceTsIds, $startDate, $nights, $currency, $quantity )
+    function collectServicePrices($serviceTsIds, $startDate, $nights, $currency, $quantity, $noOfPeople)
     {
         $this->isRatesAvailableLocally = false;
         $service = $this->ratesRepository->getServiceByTsId($serviceTsIds); 
     	if ($service !== null) {
-            $startDate = Carbon::parse($startDate)->format('Y-m-d');
-            $endDate = Carbon::parse($startDate)->addDays($nights)->format('Y-m-d');
-            $data = $this->ratesRepository->calculateTotalServiceRate($service->id, $startDate, $endDate, $currency, $quantity);
+            $data = $this->ratesRepository->calculateTotalServiceRate($service, $startDate, $currency, $quantity, $noOfPeople, $nights);
+            $this->isRatesAvailableLocally = true;
+            return $data;
+        }
+    }
+
+    function collectExtraPrices($serviceTsId, $startDate, $endDate, $currency, $noOfPeople)
+    {
+        $this->isRatesAvailableLocally = false;
+        $service = $this->ratesRepository->getServiceByTsId($serviceTsId); 
+        if ($service !== null) {
+            $data = $this->ratesRepository->calculateServiceExtraRate($service, $startDate, $endDate, $currency, $noOfPeople);
             $this->isRatesAvailableLocally = true;
             return $data;
         }

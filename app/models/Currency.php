@@ -4,11 +4,10 @@ namespace App\Models;
 
 class Currency extends \Eloquent
 {
+    protected $fillable = array('code', 'symbol', 'name', 'status');
 
-    protected $fillable = array('code', 'symbol', 'name', 'status', 'id');
-
-    public function services()
-    {
+    public function services(){
         return $this->hasMany('App\Models\Service');
     }
+
 }
