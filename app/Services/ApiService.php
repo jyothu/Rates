@@ -16,12 +16,13 @@ class ApiService
         $this->travelStudioService = $travelStudioService;
     }
 
-    function collectServicePrices($serviceTsIds, $startDate, $nights, $currency, $quantity, $noOfPeople)
+    function collectServicePrices($serviceTsIds, $startDate, $nights, $currency, $rooms)
     {
         $this->isRatesAvailableLocally = false;
         $service = $this->ratesRepository->getServiceByTsId($serviceTsIds); 
     	if ($service !== null) {
-            $data = $this->ratesRepository->calculateTotalServiceRate($service, $startDate, $currency, $quantity, $noOfPeople, $nights);
+            $roomsWithOccupancy = $this->sanitizeRoomDetails($rooms);
+            $data = $this->ratesRepository->calculateTotalServiceRate($service, $startDate, $currency, $roomsWithOccupancy, $nights);
             $this->isRatesAvailableLocally = true;
             return $data;
         }
@@ -36,5 +37,14 @@ class ApiService
             $this->isRatesAvailableLocally = true;
             return $data;
         }
+    }
+
+    private function sanitizeRoomDetails($rooms) {
+        $sanitizedArray = array_reduce($rooms, function($result, $a) { 
+            $result[$a["OCCUPANCY"]] = array("QUANTITY" => $a["QUANTITY"], "NO_OF_PASSENGERS" => $a["NO_OF_PASSENGERS"]); 
+            return $result;
+        }, array() );
+
+        return $sanitizedArray;
     }
 }

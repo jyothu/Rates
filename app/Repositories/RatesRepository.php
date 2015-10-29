@@ -27,9 +27,11 @@ class RatesRepository {
         return DB::select("select buy_price,sell_price,season_period_id,start,end from prices join season_periods on (prices.season_period_id=season_periods.id) where priceable_id=? AND season_period_id IN (select id from season_periods where start<=? AND end>=? OR start<=? AND end>=?)", [$serviceOptionId, $startDate, $startDate, $endDate, $endDate]);
     }
 
-    public function serviceOptionsAndRates($serviceId, $startDate, $endDate, $noOfPeople)
+    public function serviceOptionsAndRates($serviceId, $startDate, $endDate, $rooms)
     {
-        return DB::select("select buy_price, sell_price, season_period_id, start, end, priceable_id as option_id, service_options.name as option_name, price_bands.id as price_band_id, price_bands.min as price_band_min, price_bands.max as price_band_max, charging_policies.id as policy_id, charging_policies.ts_id as policy_tsid, charging_policies.name as policy_name, charging_policies.room_based as room_based, charging_policies.day_duration as day_duration, occ.name as occupancy_name, occ.id as occupancy_id, max_adults, max_children, meals.id as meal_id, meals.name as meal_name from prices join service_options on (prices.priceable_id = service_options.id) join season_periods on (prices.season_period_id=season_periods.id) join occupancies occ on (service_options.occupancy_id=occ.id) left join ( meal_options join meals on (meal_options.meal_id = meals.id) ) on (meal_options.service_option_id = service_options.id) left join ( service_price_bands join price_bands on (service_price_bands.price_band_id = price_bands.id AND price_bands.min<=? AND price_bands.max>=?) ) on (service_price_bands.price_id = prices.id) left join ( service_policies join charging_policies on (service_policies.charging_policy_id = charging_policies.id)) on (service_policies.price_id = prices.id) where priceable_id IN (select id from service_options where service_id=?) AND priceable_type LIKE '%ServiceOption' AND prices.season_period_id IN (select id from season_periods where  start<=? AND end>=? OR start<=? AND end>=?) and service_options.status=?", [$noOfPeople, $noOfPeople, $serviceId, $startDate, $startDate, $endDate, $endDate, 1]);
+        $occupancyIds = implode(array_keys($rooms), ",");
+        $noOfPeople = array_reduce(array_values($rooms), function($total=0, $ra) { $total += $ra["NO_OF_PASSENGERS"]; });
+        return DB::select("select buy_price, sell_price, season_period_id, start, end, priceable_id as option_id, service_options.name as option_name, price_bands.id as price_band_id, price_bands.min as price_band_min, price_bands.max as price_band_max, charging_policies.id as policy_id, charging_policies.ts_id as policy_tsid, charging_policies.name as policy_name, charging_policies.room_based as room_based, charging_policies.day_duration as day_duration, occ.name as occupancy_name, occ.id as occupancy_id, max_adults, max_children, meals.id as meal_id, meals.name as meal_name from prices join service_options on (prices.priceable_id = service_options.id) join season_periods on (prices.season_period_id=season_periods.id) join occupancies occ on (service_options.occupancy_id=occ.id) left join ( meal_options join meals on (meal_options.meal_id = meals.id) ) on (meal_options.service_option_id = service_options.id) left join ( service_price_bands join price_bands on (service_price_bands.price_band_id = price_bands.id AND price_bands.min<=? AND price_bands.max>=?) ) on (service_price_bands.price_id = prices.id) left join ( service_policies join charging_policies on (service_policies.charging_policy_id = charging_policies.id)) on (service_policies.price_id = prices.id) where priceable_id IN (select id from service_options where service_id=?) AND priceable_type LIKE '%ServiceOption' AND prices.season_period_id IN (select id from season_periods where  start<=? AND end>=? OR start<=? AND end>=?) and occ.id IN ($occupancyIds) and service_options.status=?", [$noOfPeople, $noOfPeople, $serviceId, $startDate, $startDate, $endDate, $endDate, 1]);
     }
 
     public function serviceExtrasAndRates($serviceId, $startDate, $endDate)
@@ -50,13 +52,8 @@ class RatesRepository {
             if ($policyObj->policy_name != "Fast Build") {
                 $isRoomBased = $policyObj->room_based; // 1= yes
                 $dayDuration = $policyObj->day_duration; // 1= yes
-                $nights = $this->getNightsCount($policyObj->start, $policyObj->end, $startDate, $endDate, $noOfPeople, $totalNights);
-                
-                if (preg_match("/day/i",$policyObj->policy_name)) {
-                    $nights += 1;
-                } else if($nights == 0) {
-                    $nights = 1;
-                }
+                $nights = $this->getNightsCount($policyObj->start, $policyObj->end, $startDate, $endDate, $totalNights);
+                $nights += (preg_match("/day/i",$policyObj->policy_name) ? 1 : ($nights == 0 ? 1 : 0));
                 
                 if ($isRoomBased == '1') { // unit/room based
                     if ($dayDuration <= '1') { // per unit/room per day/night
@@ -78,7 +75,7 @@ class RatesRepository {
         return $multiplicand;
     }
 
-    public function getNightsCount($seasonStart, $seasonEnd, $dayStart, $dayEnd, $noOfPeople, $totalNights) {
+    public function getNightsCount($seasonStart, $seasonEnd, $dayStart, $dayEnd, $totalNights) {
         $seasonStart = Carbon::parse($seasonStart);
         $seasonEnd = Carbon::parse($seasonEnd)->addDay();
         $dayStart = Carbon::parse($dayStart);
@@ -94,14 +91,13 @@ class RatesRepository {
         return ($totalNights > 1 && $nights == 0) ? $nights + 1 : $nights;
     }
 
-    public function calculateTotalServiceRate($service, $startDate, $toCurrency, $quantity, $noOfPeople, $totalNights) {
+    public function calculateTotalServiceRate($service, $startDate, $toCurrency, $rooms, $totalNights) {
         $exchangeRate = $this->exchangeRateRepository->exchangeRate($service->currency->code, $toCurrency);
-        
         $carbonEnd = Carbon::parse($startDate)->addDays($totalNights);
         $endDate = $carbonEnd->format('Y-m-d');
         $actualEnd = $carbonEnd->subDay()->format('Y-m-d');
         $startDate = Carbon::parse($startDate)->format('Y-m-d');
-        $serviceOptions = $this->serviceOptionsAndRates($service->id, $startDate, $actualEnd, $noOfPeople);
+        $serviceOptions = $this->serviceOptionsAndRates($service->id, $startDate, $actualEnd, $rooms);
 
         $respArray["GetServicesPricesAndAvailabilityResult"]["Services"]["PriceAndAvailabilityService"]["ServiceID"] = (int)$service->ts_id;
         $respArray["GetServicesPricesAndAvailabilityResult"]["Services"]["PriceAndAvailabilityService"]["ServiceCode"] = (int)$service->id;
@@ -121,7 +117,7 @@ class RatesRepository {
                     $mealPlan = ["MealPlanID" => (int)$price->meal_id, 
                                  "MealPlanName" =>$price->meal_name, 
                                  "MealPlanCode" => $price->meal_name.$price->meal_id];
-                    $multiplicand = $this->multiplicandByChargingPolicy($price, $startDate, $endDate, $quantity, $noOfPeople, $totalNights);
+                    $multiplicand = $this->multiplicandByChargingPolicy($price, $startDate, $endDate, $rooms[$price->occupancy_id]["QUANTITY"], $rooms[$price->occupancy_id]["NO_OF_PASSENGERS"], $totalNights);
                     $totalBuyingPrice[$price->option_id] = ($price->buy_price)*$multiplicand;
                     $totalSellingPrice[$price->option_id] = ($price->sell_price)*$multiplicand;
 
@@ -160,6 +156,7 @@ class RatesRepository {
         $actualEnd = $carbonEnd->subDay()->format('Y-m-d');
         $startDate = Carbon::parse($startDate)->format('Y-m-d');
         $serviceExtras = $this->serviceExtrasAndRates($service->id, $startDate, $actualEnd);
+        
         if (empty($serviceExtras) || is_null($serviceExtras)) {
             $responseValue = array(
                 "Errors" => (object) array(),
@@ -181,7 +178,6 @@ class RatesRepository {
             $respArray["ServiceExtrasAndPricesResponse"] = $responseValue;
 
             foreach ($serviceExtras as $key => $extra) {
-                //$multiplicand = $this->multiplicandByChargingPolicy($extra, $startDate, $endDate, 1, $noOfPeople, $totalNights);
                 $multiplicand = $this->multiplicandByChargingPolicy($extra, $startDate, $endDate, 1, 1, $totalNights);
                 
                 $value = array(

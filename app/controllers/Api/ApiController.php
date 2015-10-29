@@ -37,7 +37,6 @@ class ApiController extends BaseController
 
     public function GetServicesPricesAndAvailability()
     {
-
          // $requestData = json_decode(json_encode($this->requestData), true);
         $requestData = json_decode(Input::get('data'), true);
 
@@ -49,15 +48,13 @@ class ApiController extends BaseController
         }
         else 
         {
-            if (isset($requestData['IncomingRequest']["ROOMS_REQUIRED"]["ROOM"]["QUANTITY"])) {
-                $quantity = $requestData['IncomingRequest']["ROOMS_REQUIRED"]["ROOM"]["QUANTITY"];
-                $noOfPeople = $requestData['IncomingRequest']["ROOMS_REQUIRED"]["ROOM"]["NO_OF_PASSENGERS"];
+            if (count($requestData['IncomingRequest']["ROOMS_REQUIRED"]["ROOM"] == 1)) {
+                $rooms = [$requestData['IncomingRequest']["ROOMS_REQUIRED"]["ROOM"]];
             } else {
-                $quantity = $requestData['IncomingRequest']["ROOMS_REQUIRED"]["ROOM"][0]["QUANTITY"];
-                $noOfPeople = $requestData['IncomingRequest']["ROOMS_REQUIRED"]["ROOM"][0]["NO_OF_PASSENGERS"]; 
+                $rooms = $requestData['IncomingRequest']["ROOMS_REQUIRED"]["ROOM"];
             }
             
-            $response = $this->apiService->collectServicePrices($requestData['IncomingRequest']['SERVICEIDs'], $requestData['IncomingRequest']['START_DATE'], $requestData['IncomingRequest']['NUMBER_OF_NIGHTS'], $requestData['IncomingRequest']["CURRENCY"], $quantity, $noOfPeople);
+            $response = $this->apiService->collectServicePrices($requestData['IncomingRequest']['SERVICEIDs'], $requestData['IncomingRequest']['START_DATE'], $requestData['IncomingRequest']['NUMBER_OF_NIGHTS'], $requestData['IncomingRequest']["CURRENCY"], $rooms);
             
             if( !$this->apiService->isRatesAvailableLocally )
             {

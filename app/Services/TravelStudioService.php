@@ -35,36 +35,41 @@ class TravelStudioService
 
     public function pullRatesFromTravelStudio($funcName, $params)
     {
-        $servicePrice = 0;
-        $responses = [];
-        $carbonStartDate = Carbon::parse($params["IncomingRequest"]["START_DATE"]);
-        $totalNights = $params["IncomingRequest"]["NUMBER_OF_NIGHTS"];
-        
-        if ($totalNights == 1) {
-            $response = $this->ratesFromTravelStudio($funcName, $params);
+        if ($funcName == "GetServiceExtraPrices") {
+            $response = $this->soapCall($funcName, $params);
+
         } else {
-            $params["IncomingRequest"]["NUMBER_OF_NIGHTS"] = 1;
+            $servicePrice = 0;
+            $responses = [];
+            $carbonStartDate = Carbon::parse($params["IncomingRequest"]["START_DATE"]);
+            $totalNights = $params["IncomingRequest"]["NUMBER_OF_NIGHTS"];
             
-            for ($noOfNights = 0; $noOfNights < $totalNights; $noOfNights++) {
-                $params["IncomingRequest"]["START_DATE"] = $carbonStartDate->addDays($noOfNights)->format('Y-m-d');
-                $responses[] = $this->ratesFromTravelStudio($funcName, $params);
+            if ($totalNights == 1) {
+                $response = $this->ratesFromTravelStudio($funcName, $params);
+            } else {
+                $params["IncomingRequest"]["NUMBER_OF_NIGHTS"] = 1;
+                
+                for ($noOfNights = 0; $noOfNights < $totalNights; $noOfNights++) {
+                    $params["IncomingRequest"]["START_DATE"] = $carbonStartDate->addDays($noOfNights)->format('Y-m-d');
+                    $responses[] = $this->ratesFromTravelStudio($funcName, $params);
+
+                    if ($this->isServiceNotFound) {
+                        break;
+                    }
+                }
 
                 if ($this->isServiceNotFound) {
-                    break;
+                    return end($responses);
                 }
-            }
 
-            if ($this->isServiceNotFound) {
-                return end($responses);
+                $response = $this->mergeResponses($responses);
             }
-
-            $response = $this->mergeResponses($responses);
         }
         return $response;
     }
     
     private function ratesFromTravelStudio($funcName, $params, $isPreviousYear=false, $count=0) {
-        $response = $this->soapClient()->$funcName($params);
+        $response = $this->soapCall($funcName, $params);
         $this->getErrorsFromResponse($response);
 
         if ($this->isServiceNotFound && $count == 0) {
@@ -163,6 +168,10 @@ class TravelStudioService
         } else {
             $this->isServiceNotFound = false;
         }
+    }
+
+    private function soapCall($funcName, $params) {
+        return $this->soapClient()->$funcName($params);
     }
 
 }
