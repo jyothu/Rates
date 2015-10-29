@@ -62,7 +62,7 @@ class FastBuildRepository {
             }
             $regionObj = Region::where('ts_id', $regionTsId)->first();
             $supplierObj = Supplier::firstOrCreate(array('name' => $supplierName, 'region_id' => $regionObj->id));
-            // dd($supplierObj->toArray());
+
             // Find or Create Service
             $serviceParams = array('ts_id' => $serviceTsId,
                 'name' => $serviceName,
