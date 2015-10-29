@@ -39,7 +39,6 @@ class ApiController extends BaseController
     {
          // $requestData = json_decode(json_encode($this->requestData), true);
         $requestData = json_decode(Input::get('data'), true);
-
         $validator = Validator::make($requestData['IncomingRequest'], $this->serviceRules);
         if ($validator->fails()){
             foreach ($validator->errors()->all() as $key => $message) {
@@ -48,18 +47,17 @@ class ApiController extends BaseController
         }
         else 
         {
-            if (count($requestData['IncomingRequest']["ROOMS_REQUIRED"]["ROOM"] == 1)) {
+            if (isset($requestData['IncomingRequest']["ROOMS_REQUIRED"]["ROOM"]["QUANTITY"])) {
                 $rooms = [$requestData['IncomingRequest']["ROOMS_REQUIRED"]["ROOM"]];
             } else {
                 $rooms = $requestData['IncomingRequest']["ROOMS_REQUIRED"]["ROOM"];
             }
             
             $response = $this->apiService->collectServicePrices($requestData['IncomingRequest']['SERVICEIDs'], $requestData['IncomingRequest']['START_DATE'], $requestData['IncomingRequest']['NUMBER_OF_NIGHTS'], $requestData['IncomingRequest']["CURRENCY"], $rooms);
-            
             if( !$this->apiService->isRatesAvailableLocally )
             {
                 $funcName = __FUNCTION__;
-                $response = $this->tsService->pullRatesFromTravelStudio($funcName, $requestData);
+                $response = $this->apiService->pullRatesFromTravelStudio($funcName, $requestData);
                 // $response["GetServicesPricesAndAvailabilityResult"]["Errors"] = json_decode(json_encode(['Error' => [ 'Description' => 'Service not found']]));
             }
 
@@ -106,7 +104,7 @@ class ApiController extends BaseController
             if( !$this->apiService->isRatesAvailableLocally )
             {
                 $funcName = __FUNCTION__;
-                $response = $this->tsService->pullRatesFromTravelStudio($funcName, $extraRequest);
+                $response = $this->tsService->pullRates($funcName, $extraRequest);
             
                 // $responseValue = array(
                 //     "Errors" => (object) array(),
