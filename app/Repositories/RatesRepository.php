@@ -102,9 +102,10 @@ class RatesRepository {
         $actualEnd = $carbonEnd->subDay()->format('Y-m-d');
         $startDate = Carbon::parse($startDate)->format('Y-m-d');
         $noOfPeopleArr = $noOfPeople;
+        
         $noOfPeople = 0;
         foreach ($noOfPeopleArr as $qty) {
-            $noOfPeople += $qty;
+            $noOfPeople += $qty['no_of_passenger'];
         }
 
         $serviceOptions = $this->serviceOptionsAndRates($service->id, $startDate, $actualEnd, $noOfPeople);
@@ -120,7 +121,8 @@ class RatesRepository {
             foreach ($serviceOptions as $key => $price) {
                 $noOfPeople = 1;
                 if (array_key_exists($price->occupancy_id, $noOfPeopleArr)) {
-                    $noOfPeople = $noOfPeopleArr[$price->occupancy_id];
+                    $noOfPeople = $noOfPeopleArr[$price->occupancy_id]['no_of_passenger'];
+                    $quantity = $noOfPeopleArr[$price->occupancy_id]['quantity'];
 
 
                     if (!empty($price->policy_id) || !empty($price->price_band_id)) {
