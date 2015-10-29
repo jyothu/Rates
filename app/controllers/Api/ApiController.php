@@ -52,17 +52,31 @@ class ApiController extends BaseController
             if (isset($requestData['IncomingRequest']["ROOMS_REQUIRED"]["ROOM"]["QUANTITY"])) {
                 $quantity = $requestData['IncomingRequest']["ROOMS_REQUIRED"]["ROOM"]["QUANTITY"];
                 $noOfPeople = $requestData['IncomingRequest']["ROOMS_REQUIRED"]["ROOM"]["NO_OF_PASSENGERS"];
+                        
+                $roomArr[$requestData['IncomingRequest']["ROOMS_REQUIRED"]["ROOM"]['OCCUPANCY']] = array(
+                                'no_of_passenger' => $noOfPeople,
+                                'quantity' => $quantity,
+                        );               
+                
             } else {
                 $quantity = $requestData['IncomingRequest']["ROOMS_REQUIRED"]["ROOM"][0]["QUANTITY"];
                 $noOfPeople = $requestData['IncomingRequest']["ROOMS_REQUIRED"]["ROOM"][0]["NO_OF_PASSENGERS"]; 
+                
+                $rooms = $requestData['IncomingRequest']["ROOMS_REQUIRED"]["ROOM"];
+                foreach($rooms as $key => $room ) {                
+                    $roomArr[$room['OCCUPANCY']] = array(
+                                    'no_of_passenger' => $room['NO_OF_PASSENGERS'],
+                                    'quantity' => $room['QUANTITY'],
+                            );
+                }
+            
             }
-            $rooms = $requestData['IncomingRequest']["ROOMS_REQUIRED"]["ROOM"];
-            foreach($rooms as $room ) {
-                $roomArr[$room['OCCUPANCY']] = array(
-                                'no_of_passenger' => $room['NO_OF_PASSENGERS'],
-                                'quantity' => $room['QUANTITY'],
-                        );
-            }
+            
+            
+    
+            
+            
+            
             $noOfPeople = $roomArr;
             
             $response = $this->apiService->collectServicePrices($requestData['IncomingRequest']['SERVICEIDs'], $requestData['IncomingRequest']['START_DATE'], $requestData['IncomingRequest']['NUMBER_OF_NIGHTS'], $requestData['IncomingRequest']["CURRENCY"], $quantity, $noOfPeople);
