@@ -173,10 +173,10 @@ class RatesRepository {
         } else {
             $responseValue = array(
                 "Errors" => (object) array(),
-                "ServiceId" => $service->ts_id,
-                "ServiceCode" => $service->id,
+                "ServiceId" => (int)$service->ts_id,
+                "ServiceCode" => (int)$service->id,
                 "ServiceName" => $service->extra_name,
-                "ServiceTypeId" => $service->service_type_id
+                "ServiceTypeId" => (int)$service->service_type_id
             );
             $respArray["ServiceExtrasAndPricesResponse"] = $responseValue;
 
@@ -194,8 +194,8 @@ class RatesRepository {
                     "MinAdults" => 0,
                     "MinChild" => 0,
                     "ChildMaxAge" => 0,
-                    "ServiceExtraId" => $extra->extra_tsid,
-                    "ServiceExtraCode" => $extra->extra_id,
+                    "ServiceExtraId" => (int)$extra->extra_tsid,
+                    "ServiceExtraCode" => (int)$extra->extra_id,
                     "ServiceTypeExtraName" => $extra->extra_name,
                     "TOTALPRICE" => ceil($extra->sell_price*$exchangeRate*$multiplicand)
                 );
