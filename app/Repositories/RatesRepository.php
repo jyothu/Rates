@@ -96,15 +96,21 @@ class RatesRepository {
 
     public function calculateTotalServiceRate($service, $startDate, $toCurrency, $quantity, $noOfPeople, $totalNights) {
         $exchangeRate = $this->exchangeRateRepository->exchangeRate($service->currency->code, $toCurrency);
-        
+
         $carbonEnd = Carbon::parse($startDate)->addDays($totalNights);
         $endDate = $carbonEnd->format('Y-m-d');
         $actualEnd = $carbonEnd->subDay()->format('Y-m-d');
         $startDate = Carbon::parse($startDate)->format('Y-m-d');
+        $noOfPeopleArr = $noOfPeople;
+        $noOfPeople = 0;
+        foreach ($noOfPeopleArr as $qty) {
+            $noOfPeople += $qty;
+        }
+
         $serviceOptions = $this->serviceOptionsAndRates($service->id, $startDate, $actualEnd, $noOfPeople);
 
-        $respArray["GetServicesPricesAndAvailabilityResult"]["Services"]["PriceAndAvailabilityService"]["ServiceID"] = (int)$service->ts_id;
-        $respArray["GetServicesPricesAndAvailabilityResult"]["Services"]["PriceAndAvailabilityService"]["ServiceCode"] = (int)$service->id;
+        $respArray["GetServicesPricesAndAvailabilityResult"]["Services"]["PriceAndAvailabilityService"]["ServiceID"] = $service->ts_id;
+        $respArray["GetServicesPricesAndAvailabilityResult"]["Services"]["PriceAndAvailabilityService"]["ServiceCode"] = (int) $service->id;
         $respArray["GetServicesPricesAndAvailabilityResult"]["Warnings"] = (object) array();
 
         if (empty($serviceOptions) || is_null($serviceOptions)) {
@@ -112,37 +118,43 @@ class RatesRepository {
         } else {
             $respArray["GetServicesPricesAndAvailabilityResult"]["Errors"] = (object) array();
             foreach ($serviceOptions as $key => $price) {
-                if (!empty($price->policy_id) || !empty($price->price_band_id)) {
+                $noOfPeople = 1;
+                if (array_key_exists($price->occupancy_id, $noOfPeopleArr)) {
+                    $noOfPeople = $noOfPeopleArr[$price->occupancy_id];
 
-                    if (!isset($totalBuyingPrice[$price->option_id])) {
-                        $totalBuyingPrice[$price->option_id] = $totalSellingPrice[$price->option_id] = 0;
+
+                    if (!empty($price->policy_id) || !empty($price->price_band_id)) {
+
+                        if (!isset($totalBuyingPrice[$price->option_id])) {
+                            $totalBuyingPrice[$price->option_id] = $totalSellingPrice[$price->option_id] = 0;
+                        }
+
+                        $mealPlan = ["MealPlanID" => (int) $price->meal_id,
+                            "MealPlanName" => $price->meal_name,
+                            "MealPlanCode" => $price->meal_name . $price->meal_id];
+                        $multiplicand = $this->multiplicandByChargingPolicy($price, $startDate, $endDate, $quantity, $noOfPeople, $totalNights);
+                        $totalBuyingPrice[$price->option_id] = ($price->buy_price) * $multiplicand;
+                        $totalSellingPrice[$price->option_id] = ($price->sell_price) * $multiplicand;
+
+                        $values = array(
+                            "MaxChild" => (int) $price->max_children,
+                            "MaxAdult" => (int) $price->max_adults,
+                            "OptionOccupancy" => array(
+                                "Adults" => (int) $price->max_adults,
+                                "Children" => (int) $price->max_children),
+                            "Occupancy" => (int) $price->occupancy_id,
+                            "Currency" => $toCurrency,
+                            "TotalSellingPrice" => ceil(($totalSellingPrice[$price->option_id]) * $exchangeRate),
+                            "TotalBuyingPrice" => ceil(($totalBuyingPrice[$price->option_id]) * $exchangeRate),
+                            "OptionID" => (int) $price->option_id,
+                            "ServiceOptionName" => $price->option_name
+                        );
+
+                        $respArray["GetServicesPricesAndAvailabilityResult"]["Services"]["PriceAndAvailabilityService"]["ServiceOptions"]["PriceAndAvailabilityResponseServiceOption"][$price->option_id] = $values;
+                        $optionPrices[$price->option_id] = ["BuyPrice" => ($price->buy_price * $exchangeRate), "SellPrice" => ($price->sell_price * $exchangeRate), "MealPlan" => $mealPlan, "ChargingPolicyName" => $price->policy_name];
+
+                        $respArray["GetServicesPricesAndAvailabilityResult"]["Services"]["PriceAndAvailabilityService"]["ServiceOptions"]["PriceAndAvailabilityResponseServiceOption"][$price->option_id]["Prices"]["PriceAndAvailabilityResponsePricing"] = $optionPrices[$price->option_id];
                     }
-
-                    $mealPlan = ["MealPlanID" => (int)$price->meal_id, 
-                                 "MealPlanName" =>$price->meal_name, 
-                                 "MealPlanCode" => $price->meal_name.$price->meal_id];
-                    $multiplicand = $this->multiplicandByChargingPolicy($price, $startDate, $endDate, $quantity, $noOfPeople, $totalNights);
-                    $totalBuyingPrice[$price->option_id] = ($price->buy_price)*$multiplicand;
-                    $totalSellingPrice[$price->option_id] = ($price->sell_price)*$multiplicand;
-
-                    $values = array(
-                        "MaxChild" => (int)$price->max_children,
-                        "MaxAdult" => (int)$price->max_adults,
-                        "OptionOccupancy" => array(
-                            "Adults" => (int)$price->max_adults, 
-                            "Children" => (int)$price->max_children),
-                        "Occupancy" => (int)$price->occupancy_id, 
-                        "Currency" => $toCurrency,
-                        "TotalSellingPrice" => ceil(($totalSellingPrice[$price->option_id])*$exchangeRate),
-                        "TotalBuyingPrice" => ceil(($totalBuyingPrice[$price->option_id])*$exchangeRate),
-                        "OptionID" => (int)$price->option_id, 
-                        "ServiceOptionName" => $price->option_name
-                    );                
-
-                    $respArray["GetServicesPricesAndAvailabilityResult"]["Services"]["PriceAndAvailabilityService"]["ServiceOptions"]["PriceAndAvailabilityResponseServiceOption"][$price->option_id] = $values;
-                    $optionPrices[$price->option_id] = ["BuyPrice" => ($price->buy_price*$exchangeRate), "SellPrice" => ($price->sell_price*$exchangeRate), "MealPlan" => $mealPlan, "ChargingPolicyName" => $price->policy_name];
-            
-                    $respArray["GetServicesPricesAndAvailabilityResult"]["Services"]["PriceAndAvailabilityService"]["ServiceOptions"]["PriceAndAvailabilityResponseServiceOption"][$price->option_id]["Prices"]["PriceAndAvailabilityResponsePricing"] = $optionPrices[$price->option_id];
                 }
             }
             $priceValues = array_values($respArray["GetServicesPricesAndAvailabilityResult"]["Services"]["PriceAndAvailabilityService"]["ServiceOptions"]["PriceAndAvailabilityResponseServiceOption"]);

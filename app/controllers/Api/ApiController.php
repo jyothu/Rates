@@ -56,6 +56,14 @@ class ApiController extends BaseController
                 $quantity = $requestData['IncomingRequest']["ROOMS_REQUIRED"]["ROOM"][0]["QUANTITY"];
                 $noOfPeople = $requestData['IncomingRequest']["ROOMS_REQUIRED"]["ROOM"][0]["NO_OF_PASSENGERS"]; 
             }
+            $rooms = $requestData['IncomingRequest']["ROOMS_REQUIRED"]["ROOM"];
+            foreach($rooms as $room ) {
+                $roomArr[$room['OCCUPANCY']] = $room['NO_OF_PASSENGERS'];
+               //print_r($room['OCCUPANCY']);
+            }
+            $noOfPeople = $roomArr;
+           
+            //print_r($requestData['IncomingRequest']["ROOMS_REQUIRED"]["ROOM"]);
             
             $response = $this->apiService->collectServicePrices($requestData['IncomingRequest']['SERVICEIDs'], $requestData['IncomingRequest']['START_DATE'], $requestData['IncomingRequest']['NUMBER_OF_NIGHTS'], $requestData['IncomingRequest']["CURRENCY"], $quantity, $noOfPeople);
             
