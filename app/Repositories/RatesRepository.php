@@ -99,8 +99,8 @@ class RatesRepository {
         $startDate = Carbon::parse($startDate)->format('Y-m-d');
         $serviceOptions = $this->serviceOptionsAndRates($service->id, $startDate, $actualEnd, $rooms);
 
-        $respArray["GetServicesPricesAndAvailabilityResult"]["Services"]["PriceAndAvailabilityService"]["ServiceID"] = (int)$service->ts_id;
-        $respArray["GetServicesPricesAndAvailabilityResult"]["Services"]["PriceAndAvailabilityService"]["ServiceCode"] = (int)$service->id;
+        $respArray["GetServicesPricesAndAvailabilityResult"]["Services"]["PriceAndAvailabilityService"]["ServiceID"] = $service->ts_id;
+        $respArray["GetServicesPricesAndAvailabilityResult"]["Services"]["PriceAndAvailabilityService"]["ServiceCode"] = $service->id;
         $respArray["GetServicesPricesAndAvailabilityResult"]["Warnings"] = (object) array();
 
         if (empty($serviceOptions) || is_null($serviceOptions)) {
@@ -114,7 +114,7 @@ class RatesRepository {
                         $totalBuyingPrice[$price->option_id] = $totalSellingPrice[$price->option_id] = 0;
                     }
 
-                    $mealPlan = ["MealPlanID" => (int)$price->meal_id, 
+                    $mealPlan = ["MealPlanID" => $price->meal_id, 
                                  "MealPlanName" =>$price->meal_name, 
                                  "MealPlanCode" => $price->meal_name.$price->meal_id];
                     $multiplicand = $this->multiplicandByChargingPolicy($price, $startDate, $endDate, $rooms[$price->occupancy_id]["QUANTITY"], $rooms[$price->occupancy_id]["NO_OF_PASSENGERS"], $totalNights);
@@ -122,16 +122,16 @@ class RatesRepository {
                     $totalSellingPrice[$price->option_id] = ($price->sell_price)*$multiplicand;
 
                     $values = array(
-                        "MaxChild" => (int)$price->max_children,
-                        "MaxAdult" => (int)$price->max_adults,
+                        "MaxChild" => $price->max_children,
+                        "MaxAdult" => $price->max_adults,
                         "OptionOccupancy" => array(
-                            "Adults" => (int)$price->max_adults, 
-                            "Children" => (int)$price->max_children),
-                        "Occupancy" => (int)$price->occupancy_id, 
+                            "Adults" => $price->max_adults, 
+                            "Children" => $price->max_children),
+                        "Occupancy" => $price->occupancy_id, 
                         "Currency" => $toCurrency,
                         "TotalSellingPrice" => ceil(($totalSellingPrice[$price->option_id])*$exchangeRate),
                         "TotalBuyingPrice" => ceil(($totalBuyingPrice[$price->option_id])*$exchangeRate),
-                        "OptionID" => (int)$price->option_id, 
+                        "OptionID" => $price->option_id, 
                         "ServiceOptionName" => $price->option_name
                     );                
 
@@ -170,10 +170,10 @@ class RatesRepository {
         } else {
             $responseValue = array(
                 "Errors" => (object) array(),
-                "ServiceId" => (int)$service->ts_id,
-                "ServiceCode" => (int)$service->id,
+                "ServiceId" => $service->ts_id,
+                "ServiceCode" => $service->id,
                 "ServiceName" => $service->extra_name,
-                "ServiceTypeId" => (int)$service->service_type_id
+                "ServiceTypeId" => $service->service_type_id
             );
             $respArray["ServiceExtrasAndPricesResponse"] = $responseValue;
 
@@ -190,8 +190,8 @@ class RatesRepository {
                     "MinAdults" => 0,
                     "MinChild" => 0,
                     "ChildMaxAge" => 0,
-                    "ServiceExtraId" => (int)$extra->extra_tsid,
-                    "ServiceExtraCode" => (int)$extra->extra_id,
+                    "ServiceExtraId" => $extra->extra_tsid,
+                    "ServiceExtraCode" => $extra->extra_id,
                     "ServiceTypeExtraName" => $extra->extra_name,
                     "TOTALPRICE" => ceil($extra->sell_price*$exchangeRate*$multiplicand)
                 );
