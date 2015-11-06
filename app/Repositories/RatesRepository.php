@@ -109,7 +109,10 @@ class RatesRepository {
             $respArray["GetServicesPricesAndAvailabilityResult"]["Errors"] = (object) array();
             foreach ($serviceOptions as $key => $price) {
                 if (!empty($price->policy_id) || !empty($price->price_band_id)) {
-
+                    
+                    $sell_price = ceil($price->sell_price*$exchangeRate);
+                    $buy_price = ceil($price->buy_price*$exchangeRate);
+                    
                     if (!isset($totalBuyingPrice[$price->option_id])) {
                         $totalBuyingPrice[$price->option_id] = $totalSellingPrice[$price->option_id] = 0;
                     }
@@ -117,9 +120,11 @@ class RatesRepository {
                     $mealPlan = ["MealPlanID" => $price->meal_id, 
                                  "MealPlanName" =>$price->meal_name, 
                                  "MealPlanCode" => $price->meal_name.$price->meal_id];
+                    
                     $multiplicand = $this->multiplicandByChargingPolicy($price, $startDate, $endDate, $rooms[$price->occupancy_id]["QUANTITY"], $rooms[$price->occupancy_id]["NO_OF_PASSENGERS"], $totalNights);
-                    $totalBuyingPrice[$price->option_id] = ($price->buy_price)*$multiplicand;
-                    $totalSellingPrice[$price->option_id] = ($price->sell_price)*$multiplicand;
+                    
+                    $totalBuyingPrice[$price->option_id] = ceil($buy_price*$multiplicand);
+                    $totalSellingPrice[$price->option_id] = ceil($sell_price*$multiplicand);
 
                     $values = array(
                         "MaxChild" => $price->max_children,
@@ -129,14 +134,18 @@ class RatesRepository {
                             "Children" => $price->max_children),
                         "Occupancy" => $price->occupancy_id, 
                         "Currency" => $toCurrency,
-                        "TotalSellingPrice" => ceil(($totalSellingPrice[$price->option_id])*$exchangeRate),
-                        "TotalBuyingPrice" => ceil(($totalBuyingPrice[$price->option_id])*$exchangeRate),
+                        "TotalSellingPrice" => $totalSellingPrice[$price->option_id],
+                        "TotalBuyingPrice" => $totalBuyingPrice[$price->option_id],
                         "OptionID" => $price->option_id, 
                         "ServiceOptionName" => $price->option_name
                     );                
 
                     $respArray["GetServicesPricesAndAvailabilityResult"]["Services"]["PriceAndAvailabilityService"]["ServiceOptions"]["PriceAndAvailabilityResponseServiceOption"][$price->option_id] = $values;
-                    $optionPrices[$price->option_id] = ["BuyPrice" => ($price->buy_price*$exchangeRate), "SellPrice" => ($price->sell_price*$exchangeRate), "MealPlan" => $mealPlan, "ChargingPolicyName" => $price->policy_name];
+                    $optionPrices[$price->option_id] = [
+                        "BuyPrice" => $buy_price, 
+                        "SellPrice" => $sell_price, 
+                        "MealPlan" => $mealPlan, 
+                        "ChargingPolicyName" => $price->policy_name];
             
                     $respArray["GetServicesPricesAndAvailabilityResult"]["Services"]["PriceAndAvailabilityService"]["ServiceOptions"]["PriceAndAvailabilityResponseServiceOption"][$price->option_id]["Prices"]["PriceAndAvailabilityResponsePricing"] = $optionPrices[$price->option_id];
                 }
@@ -178,6 +187,9 @@ class RatesRepository {
             $respArray["ServiceExtrasAndPricesResponse"] = $responseValue;
 
             foreach ($serviceExtras as $key => $extra) {
+                $sell_price = ceil($extra->sell_price*$exchangeRate);
+                $buy_price = ceil($extra->buy_price*$exchangeRate);
+                
                 $multiplicand = $this->multiplicandByChargingPolicy($extra, $startDate, $endDate, 1, 1, $totalNights);
                 
                 $value = array(
@@ -193,7 +205,7 @@ class RatesRepository {
                     "ServiceExtraId" => $extra->extra_tsid,
                     "ServiceExtraCode" => $extra->extra_id,
                     "ServiceTypeExtraName" => $extra->extra_name,
-                    "TOTALPRICE" => ceil($extra->sell_price*$exchangeRate*$multiplicand)
+                    "TOTALPRICE" => ceil($sell_price*$multiplicand)
                 );
                
                 $respArray["ServiceExtrasAndPricesResponse"]["ResponseList"]["ServiceExtras"][] = $value;
@@ -201,8 +213,8 @@ class RatesRepository {
                     "PriceId" => $extra->price_id,
                     "PriceDate" => $extra->start,
                     "CurrencyIsoCode" => $toCurrency,
-                    "PriceAmount" => $extra->sell_price*$exchangeRate,
-                    "BuyPrice" => $extra->buy_price*$exchangeRate,
+                    "PriceAmount" => $sell_price,
+                    "BuyPrice" => $buy_price,
                     "ChargingPolicyName" => $extra->policy_name
                 );
                 $respArray["ServiceExtrasAndPricesResponse"]["ResponseList"]["ServiceExtras"][$key]["ExtraPrices"]["ServiceExtraPrice"] = $price;
