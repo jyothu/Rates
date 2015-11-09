@@ -46,11 +46,28 @@ foreach($csv as $row) {
 	$contractStart = $row["CONTRACTDURATIONSTARTDATE"];
 	$contractEnd = $row["CONTRACTDURATIONENDDATE"];
 	$currency = $row["CURRENCYISOCODE"];
+	
+	$weekdayPrice = $row["WEEKDAYPRICES_EXISTS"];
+	$monday = $row["PRICEDAYMONDAY"];
+	$tuesday = $row["PRICEDAYTUESDAY"];
+	$wednesday = $row["PRICEDAYWEDNESDAY"];
+	$thursday = $row["PRICEDAYTHURSDAY"];
+	$friday = $row["PRICEDAYFRIDAY"];
+	$saturday = $row["PRICEDAYSATURDAY"];
+	$sunday = $row["PRICEDAYSUNDAY"];
+
 	$buyPrice = $row["BUYPRICE"];
 	$margin = $row["MARGIN"];
     $sellPrice = $row["SELLING"];
-    $minPriceBand = $row["MIN"];
-    $maxPriceBand = $row["MAX"];
+    
+    // Priceband details
+    if (array_key_exists("PRICEBANDMIN", $row)) {
+	    $minPriceBand = $row["PRICEBANDMIN"];
+	    $maxPriceBand = $row["PRICEBANDMAX"];
+	    $buyPrice = $row["BUYPRICEBANDAMOUNT"];
+	    $sellPrice = $row["SELLINGPRICEBANDAMOUNT"];
+	}
+
 	$optionStatus = (($row["Option-status"] == "Unavailable") ? 0 : 1);
     
     print_r($row);
@@ -61,6 +78,8 @@ foreach($csv as $row) {
     $supplierObj = $regionObj->suppliers()->firstOrCreate(array('name' => $supplierName, 'ts_id' => $supplierId));
     if ($occupancyId) {
 	    $occupancyObj = Models\Occupancy::firstOrCreate(array('id' => $occupancyId, 'name' => $occupancyName));
+    } else {
+    	$occupancyObj = Models\Occupancy::find(14);
     }
 
     $mealObj = null;
@@ -139,10 +158,8 @@ foreach($csv as $row) {
     }
 
     // Find or Create Prices 
-    $priceParams = array('season_period_id' => $seasonPeriodObj->id,
-        'buy_price' => $buyPrice,
-        'sell_price' => $sellPrice,
-        'service_id' => $serviceObj->id
+    $priceParams = array('season_period_id' => $seasonPeriodObj->id, 'buy_price' => $buyPrice,
+        'sell_price' => $sellPrice, 'service_id' => $serviceObj->id
         );
 
     $priceObj = null;
@@ -153,16 +170,24 @@ foreach($csv as $row) {
     }
 
     // Find or Create Service Policies
+    $servicePolicyObj = null;
     if ($policyObj) {
         $servicePolicyParams = array('charging_policy_id' => $policyObj->id);
-        $priceObj->servicePolicy()->firstOrCreate( $servicePolicyParams );
+        $servicePolicyObj = $priceObj->servicePolicy()->firstOrCreate( $servicePolicyParams );
     }
 
     // Find or Create Service Price Bands
-    if ($priceBandObj) {
-        $serviceBandParams = array('price_band_id' => $priceBandObj->id);
-        $priceObj->servicePriceBand()->firstOrCreate( $serviceBandParams );
+    if ($priceBandObj && $servicePolicyObj) {
+        $policyBandParams = array('price_band_id' => $priceBandObj->id);
+        $servicePolicyObj->policyPriceBands()->firstOrCreate( $policyBandParams );
     }
+
+    // Week Prices
+    $weekParams = array('monday' => $monday, 'tuesday' => $tuesday,
+	    'wednesday' => $wednesday, 'thursday' => $thursday, 'friday' => $friday,
+	    'saturday' =>  $saturday, 'sunday' => $sunday
+    	);
+    $priceObj->weekPrices()->firstOrCreate( $weekParams );
 
     echo "Service ".$serviceObj->id." / ".$serviceObj->name." has been created...\n";
 }

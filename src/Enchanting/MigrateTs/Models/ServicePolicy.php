@@ -10,6 +10,10 @@ class ServicePolicy extends \Illuminate\Database\Eloquent\Model {
         return $this->belongsTo('App\Models\Price');
     }
 
+    public function policyPriceBands() {
+        return $this->hasMany('App\Models\PolicyPriceBand');
+    }
+
 }
 
 ?>

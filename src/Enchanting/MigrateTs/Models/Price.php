@@ -15,8 +15,12 @@ class Price extends \Illuminate\Database\Eloquent\Model {
         return $this->hasOne('App\Models\ServicePolicy');
     }
 
-    public function servicePriceBand() {
-        return $this->hasOne('App\Models\ServicePriceBand');
+    public function weekPrices() {
+        return $this->hasMany('App\Models\WeekPrice');
+    }
+
+    public function policyPriceBand() {
+        return $this->hasOne('App\Models\PolicyPriceBand');
     }
 
     public function seasonPeriod(){

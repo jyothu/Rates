@@ -11,7 +11,7 @@ CREATE TABLE `service_types` (
 CREATE TABLE `regions` (
   `id` bigint(12) NOT NULL AUTO_INCREMENT,
   `ts_id` bigint(12) NOT NULL,
-  `name` varchar(255) NOT NULL UNIQUE,
+  `name` varchar(255) NOT NULL,
   `parent_id` bigint(12) NOT NULL,
   `status` tinyint(1) DEFAULT 1,
   `created_at` datetime DEFAULT NULL,
@@ -161,16 +161,32 @@ CREATE TABLE `service_policies` (
   FOREIGN KEY (`charging_policy_id`) REFERENCES charging_policies(`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE `service_price_bands` (
+CREATE TABLE `policy_price_bands` (
   `id` bigint(12) NOT NULL AUTO_INCREMENT,
-  `price_id` bigint(12) NOT NULL,
+  `service_policy_id` bigint(12) NOT NULL,
   `price_band_id` bigint(12) NOT NULL,
   `status` tinyint(1) DEFAULT 1,
   `created_at` datetime DEFAULT NULL,
   `updated_at` datetime DEFAULT NULL,
   PRIMARY KEY (`id`),
-  FOREIGN KEY (`price_id`) REFERENCES prices(`id`),
+  FOREIGN KEY (`service_policy_id`) REFERENCES service_policies(`id`),
   FOREIGN KEY (`price_band_id`) REFERENCES price_bands(`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE `week_prices` (
+  `id` bigint(12) NOT NULL AUTO_INCREMENT,
+  `price_id` bigint(12) NOT NULL,
+  `monday` tinyint(1) DEFAULT 0,
+  `tuesday` tinyint(1) DEFAULT 0,
+  `wednesday` tinyint(1) DEFAULT 0,
+  `thursday` tinyint(1) DEFAULT 0,
+  `friday` tinyint(1) DEFAULT 0,
+  `saturday` tinyint(1) DEFAULT 0,
+  `sunday` tinyint(1) DEFAULT 0,
+  `created_at` datetime DEFAULT NULL,
+  `updated_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  FOREIGN KEY (`price_id`) REFERENCES prices(`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 CREATE TABLE `meal_options` (
