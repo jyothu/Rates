@@ -30,8 +30,8 @@ class RatesRepository {
     public function serviceOptionsAndRates($serviceId, $startDate, $endDate, $rooms)
     {
         $occupancyIds = implode(array_keys($rooms), ",");
-        $noOfPeople = array_reduce(array_values($rooms), function($total=0, $ra) { $total += $ra["NO_OF_PASSENGERS"]; });
-        return DB::select("select prices.id as price_id, buy_price, sell_price, season_period_id, start, end, priceable_id as option_id, service_options.name as option_name, price_bands.id as price_band_id, price_bands.min as price_band_min, price_bands.max as price_band_max, charging_policies.id as policy_id, charging_policies.ts_id as policy_tsid, charging_policies.name as policy_name, charging_policies.room_based as room_based, charging_policies.day_duration as day_duration, occ.name as occupancy_name, occ.id as occupancy_id, max_adults, max_children, meals.id as meal_id, meals.name as meal_name from prices join service_options on (prices.priceable_id = service_options.id) join season_periods on (prices.season_period_id=season_periods.id) join occupancies occ on (service_options.occupancy_id=occ.id) left join ( meal_options join meals on (meal_options.meal_id = meals.id) ) on (meal_options.service_option_id = service_options.id) left join ( service_price_bands join price_bands on (service_price_bands.price_band_id = price_bands.id AND price_bands.min<=? AND price_bands.max>=?) ) on (service_price_bands.price_id = prices.id) left join ( service_policies join charging_policies on (service_policies.charging_policy_id = charging_policies.id)) on (service_policies.price_id = prices.id) where priceable_id IN (select id from service_options where service_id=?) AND priceable_type LIKE '%ServiceOption' AND prices.season_period_id IN (select id from season_periods where  start<=? AND end>=? OR start<=? AND end>=?) and occ.id IN ($occupancyIds) and service_options.status=?", [$noOfPeople, $noOfPeople, $serviceId, $startDate, $startDate, $endDate, $endDate, 1]);
+        $noOfPeople = array_reduce(array_values($rooms), function($total=0, $ra) { $total += $ra["NO_OF_PASSENGERS"]; });   
+        return DB::select("select buy_price, sell_price, monday, tuesday, wednesday, thursday, friday, saturday, sunday, season_period_id, start, end, priceable_id as option_id, service_options.name as option_name, price_bands.id as price_band_id, price_bands.min as price_band_min, price_bands.max as price_band_max, charging_policies.id as policy_id, charging_policies.ts_id as policy_tsid, charging_policies.name as policy_name, charging_policies.room_based as room_based, charging_policies.day_duration as day_duration, occ.name as occupancy_name, occ.id as occupancy_id, max_adults, max_children, meals.id as meal_id, meals.name as meal_name from prices join service_options on (prices.priceable_id = service_options.id) join season_periods on (prices.season_period_id=season_periods.id) join occupancies occ on (service_options.occupancy_id=occ.id) left join ( meal_options join meals on (meal_options.meal_id = meals.id) ) on (meal_options.service_option_id = service_options.id) left join ( service_policies join charging_policies on (service_policies.charging_policy_id = charging_policies.id)) on (service_policies.price_id = prices.id) left join ( policy_price_bands join price_bands on (policy_price_bands.price_band_id = price_bands.id AND price_bands.min<=? AND price_bands.max>=?) ) on (policy_price_bands.service_policy_id = service_policies.id) left join week_prices on (prices.id = week_prices.price_id) where priceable_id IN (select id from service_options where service_id=?) AND priceable_type LIKE '%ServiceOption' AND prices.season_period_id IN (select id from season_periods where  start<=? AND end>=? OR start<=? AND end>=?) and occ.id IN ($occupancyIds) and service_options.status=?", [$noOfPeople, $noOfPeople, $serviceId, $startDate, $startDate, $endDate, $endDate, 1]);
     }
 
     public function serviceExtrasAndRates($serviceId, $startDate, $endDate)
@@ -91,7 +91,7 @@ class RatesRepository {
         return ($totalNights > 1 && $nights == 0) ? $nights + 1 : $nights;
     }
     
-    public function getPriceByConsideringWeekDay($service_id,$startDate, $season_period_id, $option_id, $price_id, $totalNights) {
+    public function getPriceByConsideringWeekDay($service_id,$startDate, $season_period_id, $option_id, $totalNights) {
               
         $buy_price = 0;
         $sell_price = 0;
@@ -128,7 +128,7 @@ class RatesRepository {
         $actualEnd = $carbonEnd->subDay()->format('Y-m-d');
         $startDate = Carbon::parse($startDate)->format('Y-m-d');
         $serviceOptions = $this->serviceOptionsAndRates($service->id, $startDate, $actualEnd, $rooms);
-  
+        
         $respArray["GetServicesPricesAndAvailabilityResult"]["Services"]["PriceAndAvailabilityService"]["ServiceID"] = $service->ts_id;
         $respArray["GetServicesPricesAndAvailabilityResult"]["Services"]["PriceAndAvailabilityService"]["ServiceCode"] = $service->id;
         $respArray["GetServicesPricesAndAvailabilityResult"]["Warnings"] = (object) array();
@@ -141,7 +141,7 @@ class RatesRepository {
                                            
                 if (!empty($price->policy_id) || !empty($price->price_band_id)) {
                     
-                    $weekDayPriceArr = $this->getPriceByConsideringWeekDay($service->id,$startDate, $price->season_period_id,$price->option_id, $price->price_id, $totalNights); // getting price for per night per person
+                    $weekDayPriceArr = $this->getPriceByConsideringWeekDay($service->id,$startDate, $price->season_period_id,$price->option_id, $totalNights); // getting price for per night per person
                 
                     if(!empty($weekDayPriceArr)) {
                         $price->buy_price = $weekDayPriceArr['buy_price'];
