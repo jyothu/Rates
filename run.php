@@ -47,14 +47,16 @@ foreach($csv as $row) {
 	$contractEnd = $row["CONTRACTDURATIONENDDATE"];
 	$currency = $row["CURRENCYISOCODE"];
 	
-	$weekdayPrice = $row["WEEKDAYPRICES_EXISTS"];
-	$monday = $row["PRICEDAYMONDAY"];
-	$tuesday = $row["PRICEDAYTUESDAY"];
-	$wednesday = $row["PRICEDAYWEDNESDAY"];
-	$thursday = $row["PRICEDAYTHURSDAY"];
-	$friday = $row["PRICEDAYFRIDAY"];
-	$saturday = $row["PRICEDAYSATURDAY"];
-	$sunday = $row["PRICEDAYSUNDAY"];
+        if (array_key_exists("WEEKDAYPRICES_EXISTS", $row)) {
+            $weekdayPrice = $row["WEEKDAYPRICES_EXISTS"];
+            $monday = $row["PRICEDAYMONDAY"];
+            $tuesday = $row["PRICEDAYTUESDAY"];
+            $wednesday = $row["PRICEDAYWEDNESDAY"];
+            $thursday = $row["PRICEDAYTHURSDAY"];
+            $friday = $row["PRICEDAYFRIDAY"];
+            $saturday = $row["PRICEDAYSATURDAY"];
+            $sunday = $row["PRICEDAYSUNDAY"];
+        }
 
 	$buyPrice = $row["BUYPRICE"];
 	$margin = $row["MARGIN"];
@@ -68,7 +70,7 @@ foreach($csv as $row) {
 	    $sellPrice = $row["SELLINGPRICEBANDAMOUNT"];
 	}
 
-	$optionStatus = (($row["Option-status"] == "Unavailable") ? 0 : 1);
+	$optionStatus = ((isset($row["Option-status"]) && ($row["Option-status"] == "Unavailable")) ? 0 : 1);
     
     print_r($row);
 
@@ -119,7 +121,7 @@ foreach($csv as $row) {
     
     // Find or Create Price Bands
     $priceBandObj = null;
-    if ($minPriceBand) {
+    if (isset($minPriceBand)) {
         $priceBandParams = array('min' => $minPriceBand, 'max' => $maxPriceBand);
         $priceBandObj = Models\PriceBand::firstOrCreate( $priceBandParams );
     }
@@ -183,11 +185,13 @@ foreach($csv as $row) {
     }
 
     // Week Prices
-    $weekParams = array('monday' => $monday, 'tuesday' => $tuesday,
-	    'wednesday' => $wednesday, 'thursday' => $thursday, 'friday' => $friday,
-	    'saturday' =>  $saturday, 'sunday' => $sunday
-    	);
-    $priceObj->weekPrices()->firstOrCreate( $weekParams );
+    if(isset($weekdayPrice)) {
+        $weekParams = array('monday' => $monday, 'tuesday' => $tuesday,
+                'wednesday' => $wednesday, 'thursday' => $thursday, 'friday' => $friday,
+                'saturday' =>  $saturday, 'sunday' => $sunday
+            );
+        $priceObj->weekPrices()->firstOrCreate( $weekParams );
+    }
 
     echo "Service ".$serviceObj->id." / ".$serviceObj->name." has been created...\n";
 }
