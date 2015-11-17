@@ -9,5 +9,8 @@ class ServicePolicy extends \Eloquent
   	public function price() {
         return $this->belongsTo('App\Models\Price');
     }
-
+    
+    public function policyPriceBands() {
+        return $this->hasMany('App\Models\PolicyPriceBand');
+    }
 }
