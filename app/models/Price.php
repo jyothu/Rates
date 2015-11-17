@@ -22,4 +22,8 @@ class Price extends \Eloquent
     public function service(){
         return $this->belongsTo('App\Models\Service');
     }
+
+    public function weekPrices() {
+        return $this->hasMany('App\Models\WeekPrice');
+    }
 }
