@@ -30,8 +30,8 @@ class RatesRepository {
     public function serviceOptionsAndRates($serviceId, $startDate, $endDate, $rooms)
     {
         $occupancyIds = implode(array_keys($rooms), ",");
-        $noOfPeople = array_reduce(array_values($rooms), function($total=0, $ra) { return $total += $ra["NO_OF_PASSENGERS"]; });
-        return DB::select("select buy_price, sell_price, monday, tuesday, wednesday, thursday, friday, saturday, sunday, season_period_id, start, end, priceable_id as option_id, service_options.name as option_name, price_bands.id as price_band_id, price_bands.min as price_band_min, price_bands.max as price_band_max, charging_policies.id as policy_id, charging_policies.ts_id as policy_tsid, charging_policies.name as policy_name, charging_policies.room_based as room_based, charging_policies.day_duration as day_duration, occ.name as occupancy_name, occ.id as occupancy_id, max_adults, max_children, meals.id as meal_id, meals.name as meal_name from prices join service_options on (prices.priceable_id = service_options.id) join season_periods on (prices.season_period_id=season_periods.id) join occupancies occ on (service_options.occupancy_id=occ.id) join service_policies on (service_policies.price_id = prices.id) join charging_policies on (service_policies.charging_policy_id = charging_policies.id) left join ( meal_options join meals on (meal_options.meal_id = meals.id) ) on (meal_options.service_option_id = service_options.id) right join ( policy_price_bands join price_bands on (policy_price_bands.price_band_id = price_bands.id AND price_bands.min<=? AND price_bands.max>=?) ) on (policy_price_bands.service_policy_id = service_policies.id) left join week_prices on (prices.id = week_prices.price_id) where priceable_id IN (select id from service_options where service_id=?) AND priceable_type LIKE '%ServiceOption' AND prices.season_period_id IN (select id from season_periods where  start<=? AND end>=? OR start<=? AND end>=?) and occ.id IN ($occupancyIds) and service_options.status=?", [$noOfPeople, $noOfPeople, $serviceId, $startDate, $startDate, $endDate, $endDate, 1]);  
+        $noOfPeople = array_reduce(array_values($rooms), function($total=0, $ra) { return $total += $ra["NO_OF_PASSENGERS"]; });        
+        return DB::select("select prices.id as price_id, buy_price, sell_price, monday, tuesday, wednesday, thursday, friday, saturday, sunday, season_period_id, start, end, priceable_id as option_id, service_options.name as option_name, price_bands.id as price_band_id, price_bands.min as price_band_min, price_bands.max as price_band_max, charging_policies.id as policy_id, charging_policies.ts_id as policy_tsid, charging_policies.name as policy_name, charging_policies.room_based as room_based, charging_policies.day_duration as day_duration, occ.name as occupancy_name, occ.id as occupancy_id, max_adults, max_children, meals.id as meal_id, meals.name as meal_name from prices join service_options on (prices.priceable_id = service_options.id) join season_periods on (prices.season_period_id=season_periods.id) join occupancies occ on (service_options.occupancy_id=occ.id) join service_policies on (service_policies.price_id = prices.id) join charging_policies on (service_policies.charging_policy_id = charging_policies.id) left join ( meal_options join meals on (meal_options.meal_id = meals.id) ) on (meal_options.service_option_id = service_options.id) right join ( policy_price_bands join price_bands on (policy_price_bands.price_band_id = price_bands.id AND price_bands.min<=? AND price_bands.max>=?) ) on (policy_price_bands.service_policy_id = service_policies.id) left join week_prices on (prices.id = week_prices.price_id) where priceable_id IN (select id from service_options where service_id=?) AND priceable_type LIKE '%ServiceOption' AND prices.season_period_id IN (select id from season_periods where  start<=? AND end>=? OR start<=? AND end>=?) and occ.id IN ($occupancyIds) and service_options.status=?", [$noOfPeople, $noOfPeople, $serviceId, $startDate, $startDate, $endDate, $endDate, 1]);  
     }
 
     public function serviceExtrasAndRates($serviceId, $startDate, $endDate)
@@ -46,9 +46,9 @@ class RatesRepository {
     // Calculating multiplicand with respect to either charging policy or Price bands.
     public function multiplicandByChargingPolicy($policyObj, $startDate, $endDate, $quantity, $noOfPeople, $totalNights) {
         $multiplicand = 1;
-        if ($policyObj->price_band_id) {
+        /*if ($policyObj->price_band_id) {
             $multiplicand *= $noOfPeople;
-        } else if ($policyObj->policy_id) {
+        } else */if ($policyObj->policy_id) {
             if ($policyObj->policy_name != "Fast Build") {
                 $isRoomBased = $policyObj->room_based; // 1= yes
                 $dayDuration = $policyObj->day_duration; // 1= yes
@@ -105,8 +105,10 @@ class RatesRepository {
                 $startDate = Carbon::parse($startDate)->addDay();
                 $startDate_day = $startDate->format('l'); 
             }
-
-            $weekDayPriceObj = DB::select("select p.buy_price, p.sell_price from prices p, week_prices wp where p.service_id = ".$service_id. " and p.id = wp.price_id and wp.".strtolower($startDate_day)." = 1 and p.season_period_id = ".$season_period_id. " and p.priceable_id=".$option_id );            
+              
+            //echo "select p.buy_price, p.sell_price from prices p, week_prices wp where p.service_id = ".$service_id. " and p.id = wp.price_id and wp.".strtolower($startDate_day)." = 1 and p.season_period_id = ".$season_period_id. " and p.priceable_id=".$option_id ."\r\n";
+            
+            $weekDayPriceObj = DB::select("select p.buy_price, p.sell_price from prices p, week_prices wp where p.service_id = ".$service_id. " and p.id = wp.price_id and wp.".strtolower($startDate_day)." = 1 and p.season_period_id = ".$season_period_id. " and p.priceable_id=".$option_id );      
             if(!empty($weekDayPriceObj)) {
                 $buy_price += $weekDayPriceObj[0]->buy_price;
                 $sell_price += $weekDayPriceObj[0]->sell_price;
@@ -138,14 +140,33 @@ class RatesRepository {
         } else {
             $respArray["GetServicesPricesAndAvailabilityResult"]["Errors"] = (object) array();
             foreach ($serviceOptions as $key => $price) {
-                                           
-                if (!empty($price->policy_id) || !empty($price->price_band_id)) {
-                    
+                       
+                $multiplicand = $this->multiplicandByChargingPolicy($price, $startDate, $endDate, $rooms[$price->occupancy_id]["QUANTITY"], $rooms[$price->occupancy_id]["NO_OF_PASSENGERS"], $totalNights);
+                
+                if(empty($price->price_band_id)) {
                     $weekDayPriceArr = $this->getPriceByConsideringWeekDay($service->id,$startDate, $price->season_period_id,$price->option_id, $totalNights); // getting price for per night per person
                 
-                    if(!empty($weekDayPriceArr)) {
+                    if(!empty($weekDayPriceArr)) { 
+                       
                         $price->buy_price = $weekDayPriceArr['buy_price'];
-                        $price->sell_price = $weekDayPriceArr['sell_price'];
+                        $price->sell_price = $weekDayPriceArr['sell_price'];                    
+                        $multiplicand = 1; // if room based.. as we are already calculating price for each day
+                        // if the charging policy is based on person 
+                        if($price->room_based === 0 ) {
+                          $multiplicand = $rooms[$price->occupancy_id]["NO_OF_PASSENGERS"];  
+                        }
+                    }                      
+                }
+                    
+                if (!empty($price->policy_id) || !empty($price->price_band_id)) {
+                    
+                    
+                    /*$weekDayPriceArr = $this->getPriceByConsideringWeekDay($service->id,$startDate, $price->season_period_id,$price->option_id, $totalNights); // getting price for per night per person
+                
+                    if(!empty($weekDayPriceArr)) { 
+                       
+                        $price->buy_price = $weekDayPriceArr['buy_price'];
+                        $price->sell_price = $weekDayPriceArr['sell_price'];                    
                         $multiplicand = 1; // if room based.. as we are already calculating price for each day
                         // if the charging policy is based on person 
                         if($price->room_based === 0 ) {
@@ -153,7 +174,8 @@ class RatesRepository {
                         }
                     }  else {  // if week day prices are not available
                         $multiplicand = $this->multiplicandByChargingPolicy($price, $startDate, $endDate, $rooms[$price->occupancy_id]["QUANTITY"], $rooms[$price->occupancy_id]["NO_OF_PASSENGERS"], $totalNights);
-                    }                  
+                    } */ 
+                    
                     
                     $sell_price = ceil($price->sell_price*$exchangeRate);
                     $buy_price = ceil($price->buy_price*$exchangeRate);
@@ -204,12 +226,13 @@ class RatesRepository {
     function calculateServiceExtraRate($service, $startDate, $endDate, $toCurrency, $noOfPeople) {
 
         $exchangeRate = $this->exchangeRateRepository->exchangeRate($service->currency->code, $toCurrency);
+        $exchangeRate = 1;
         $carbonEnd = Carbon::parse($endDate);
         $totalNights = $carbonEnd->diffInDays(Carbon::parse($startDate));
         $actualEnd = $carbonEnd->subDay()->format('Y-m-d');
         $startDate = Carbon::parse($startDate)->format('Y-m-d');
         $serviceExtras = $this->serviceExtrasAndRates($service->id, $startDate, $actualEnd);
-        
+        print_r($serviceExtras);
         if (empty($serviceExtras) || is_null($serviceExtras)) {
             $responseValue = array(
                 "Errors" => (object) array(),
@@ -231,10 +254,26 @@ class RatesRepository {
             $respArray["ServiceExtrasAndPricesResponse"] = $responseValue;
 
             foreach ($serviceExtras as $key => $extra) {
+                
+                $multiplicand = $this->multiplicandByChargingPolicy($extra, $startDate, $endDate, 1, 1, $totalNights);    
+                //if(empty($price->price_band_id)) {
+                if(1) {
+                    $weekDayPriceArr = $this->getPriceByConsideringWeekDay($service->id,$startDate, $extra->season_period_id,$extra->extra_id, $totalNights); // getting price for per night per person
+                    
+                    if(!empty($weekDayPriceArr)) { 
+                       
+                        $extra->buy_price = $weekDayPriceArr['buy_price'];
+                        $extra->sell_price = $weekDayPriceArr['sell_price'];                
+                        $multiplicand = 1; // if room based.. as we are already calculating price for each day
+                    }                      
+                }
+                
                 $sell_price = ceil($extra->sell_price*$exchangeRate);
                 $buy_price = ceil($extra->buy_price*$exchangeRate);
                 
-                $multiplicand = $this->multiplicandByChargingPolicy($extra, $startDate, $endDate, 1, 1, $totalNights);
+                echo 'totalNights : '.$totalNights."\r\n";
+                echo 'buy_price : '.$extra->buy_price."\r\n";
+                echo 'sell_price : '.$extra->sell_price."\r\n";
                 
                 $value = array(
                     "ExtraMandatory" => false,
