@@ -58,7 +58,6 @@ class RatesRepository {
                 $dayDuration = $policyObj->day_duration; // 1= yes
                 $nights = $this->getNightsCount($policyObj->start, $policyObj->end, $startDate, $endDate, $totalNights);
                 $nights += (preg_match("/day/i",$policyObj->policy_name) ? 1 : ($nights == 0 ? 1 : 0));
-                
                 if ($isRoomBased == '1') { // unit/room based
                     if ($dayDuration <= '1') { // per unit/room per day/night
                         $multiplicand *= $nights*$quantity;
@@ -148,16 +147,14 @@ class RatesRepository {
                 $sell_price = ceil($price->sell_price*$exchangeRate);
                 $buy_price = ceil($price->buy_price*$exchangeRate);                    
                 $multiplicand = $this->multiplicandByChargingPolicy($price, $startDate, $endDate, $rooms[$price->occupancy_id]["QUANTITY"], $rooms[$price->occupancy_id]["NO_OF_PASSENGERS"], $totalNights);
-                
                 // Getting total price for a option with respect to Week Days if exists -  Start
                 if(empty($price->price_band_id)) { // we are considering Price band doesn't have week day prices
                     $weekDayPriceArr = $this->getPriceByConsideringWeekDay($service->id,$startDate, $price->season_period_id,$price->option_id, $totalNights, $exchangeRate); // getting price for per night per person
-                
                     if(!empty($weekDayPriceArr)) { 
                         $buy_price = $weekDayPriceArr['buy_price'];
                         $sell_price = $weekDayPriceArr['sell_price'];                    
-                        $multiplicand = 1; // if room based.. as we are already calculating price for each day
-                        // if the charging policy is based on person 
+                        $multiplicand = $rooms[$price->occupancy_id]["QUANTITY"]; // if room based.. as we are already calculating price for each day -  this is Quantity based
+                        // if the charging policy is based on person -  this is Person based
                         if($price->room_based === 0 ) {
                           $multiplicand = $rooms[$price->occupancy_id]["NO_OF_PASSENGERS"];  
                         }
