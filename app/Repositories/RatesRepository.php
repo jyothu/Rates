@@ -150,8 +150,8 @@ class RatesRepository {
                     if(!empty($weekDayPriceArr)) { 
                         $buy_price = $weekDayPriceArr['buy_price'];
                         $sell_price = $weekDayPriceArr['sell_price'];                    
-                        $multiplicand = 1; // if room based.. as we are already calculating price for each day
-                        // if the charging policy is based on person 
+                        $multiplicand = $rooms[$price->occupancy_id]["QUANTITY"]; // if room based.. as we are already calculating price for each day -  this is Quantity based
+                        // if the charging policy is based on person -  this is Person based
                         if($price->room_based === 0 ) {
                           $multiplicand = $rooms[$price->occupancy_id]["NO_OF_PASSENGERS"];  
                         }
