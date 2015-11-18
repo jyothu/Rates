@@ -123,7 +123,13 @@ class RatesRepository {
     }
 
     public function calculateTotalServiceRate($service, $startDate, $toCurrency, $rooms, $totalNights) {
-        $exchangeRate = $this->exchangeRateRepository->exchangeRate($service->currency->code, $toCurrency);
+        
+        if(!empty($toCurrency)) {
+            $exchangeRate = $this->exchangeRateRepository->exchangeRate($service->currency->code, $toCurrency);
+        } else {
+            $exchangeRate = 1;
+            $toCurrency = $service->currency->code;
+        }  
         $carbonEnd = Carbon::parse($startDate)->addDays($totalNights);
         $endDate = $carbonEnd->format('Y-m-d');
         $actualEnd = $carbonEnd->subDay()->format('Y-m-d');
@@ -205,8 +211,13 @@ class RatesRepository {
     }
 
     function calculateServiceExtraRate($service, $startDate, $endDate, $toCurrency, $noOfPeople) {
-
-        $exchangeRate = $this->exchangeRateRepository->exchangeRate($service->currency->code, $toCurrency);
+                
+        if(!empty($toCurrency)) {
+            $exchangeRate = $this->exchangeRateRepository->exchangeRate($service->currency->code, $toCurrency);
+        } else {
+            $exchangeRate = 1;
+            $toCurrency = $service->currency->code;
+        }
         $carbonEnd = Carbon::parse($endDate);
         $totalNights = $carbonEnd->diffInDays(Carbon::parse($startDate));
         $actualEnd = $carbonEnd->subDay()->format('Y-m-d');
