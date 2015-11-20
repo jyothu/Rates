@@ -146,7 +146,6 @@ class RatesRepository {
             $exchangeRate = 1;
             $toCurrency = $service->currency->code;
         } 
-        $exchangeRate = 1;
         $carbonEnd = Carbon::parse($startDate)->addDays($totalNights);
         $endDate = $carbonEnd->format('Y-m-d');
         $actualEnd = $carbonEnd->subDay()->format('Y-m-d');
@@ -162,15 +161,16 @@ class RatesRepository {
         } else {
             $respArray["GetServicesPricesAndAvailabilityResult"]["Errors"] = (object) array();
             foreach ($serviceOptions as $key => $price) {                       
-                
+                $weekDaynights = 0;
                 $sell_price = ceil($price->sell_price*$exchangeRate);
                 $buy_price = ceil($price->buy_price*$exchangeRate);                    
                 $chargingPolicyMultiplicand = $this->multiplicandByChargingPolicy($price, $startDate, $endDate, $rooms[$price->occupancy_id]["QUANTITY"], $rooms[$price->occupancy_id]["NO_OF_PASSENGERS"], $totalNights);
                 $multiplicand = $chargingPolicyMultiplicand['multiplicand'];
                 
                 // Getting total price for a option with respect to Week Days if exists -  Start
-                if(!isset($price->price_band_id) || empty($price->price_band_id)) { // we are considering Price band doesn't have week day prices                  
-                    $weekDayPriceArr = $this->getPriceByConsideringWeekDay($service->id,$startDate, $price->season_period_id,$price->option_id, $totalNights, $exchangeRate,$chargingPolicyMultiplicand); // getting price for per night per person
+                if(!isset($price->price_band_id) || empty($price->price_band_id)) { // we are considering Price band doesn't have week day prices                    
+                    $weekDaynights = $totalNights + (preg_match("/day/i",$price->policy_name) ? 1 : ($totalNights == 0 ? 1 : 0));
+                    $weekDayPriceArr = $this->getPriceByConsideringWeekDay($service->id,$startDate, $price->season_period_id,$price->option_id, $weekDaynights, $exchangeRate,$chargingPolicyMultiplicand); // getting price for per night per person
                     if(!empty($weekDayPriceArr)) { 
                         $buy_price = $weekDayPriceArr['buy_price'];
                         $sell_price = $weekDayPriceArr['sell_price'];                        
@@ -182,7 +182,6 @@ class RatesRepository {
                     } 
                 }
                 // Getting total price for a option with respect to Week Days if exists -  End
-                    
                 if (!empty($price->policy_id) || !empty($price->price_band_id)) {
                     
                     if (!isset($totalBuyingPrice[$price->option_id])) {
@@ -237,8 +236,6 @@ class RatesRepository {
             $exchangeRate = 1;
             $toCurrency = $service->currency->code;
         }
-                    $exchangeRate = 1;
-
         $carbonEnd = Carbon::parse($endDate);
         $totalNights = $carbonEnd->diffInDays(Carbon::parse($startDate));
         $actualEnd = $carbonEnd->subDay()->format('Y-m-d');
@@ -270,9 +267,8 @@ class RatesRepository {
                 $buy_price = ceil($extra->buy_price*$exchangeRate);
                 $chargingPolicyMultiplicand = $this->multiplicandByChargingPolicy($extra, $startDate, $endDate, 1, 1, $totalNights);
                 $multiplicand = $chargingPolicyMultiplicand['multiplicand'];
-                
-               
-                $weekDayPriceArr = $this->getPriceByConsideringWeekDay($service->id,$startDate, $extra->season_period_id,$extra->extra_id, $totalNights, $exchangeRate,$chargingPolicyMultiplicand); // getting price for per night per person
+                $weekDaynights = $totalNights + (preg_match("/day/i",$price->policy_name) ? 1 : ($totalNights == 0 ? 1 : 0));
+                $weekDayPriceArr = $this->getPriceByConsideringWeekDay($service->id,$startDate, $extra->season_period_id,$extra->extra_id, $weekDaynights, $exchangeRate,$chargingPolicyMultiplicand); // getting price for per night per person
                 if(!empty($weekDayPriceArr)) {
                     $sell_price = $weekDayPriceArr['sell_price']; 
                     $buy_price = $weekDayPriceArr['buy_price'];
