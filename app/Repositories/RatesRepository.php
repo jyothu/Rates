@@ -52,7 +52,9 @@ class RatesRepository {
     // Calculating multiplicand with respect to either charging policy or Price bands.
     public function multiplicandByChargingPolicy($policyObj, $startDate, $endDate, $quantity, $noOfPeople, $totalNights) {
         $multiplicand = 1;
-        if ($policyObj->policy_id) {
+         if ($policyObj->price_band_id) {
+            $multiplicand *= $noOfPeople;
+        } else if ($policyObj->policy_id) {
             if ($policyObj->policy_name != "Fast Build") {
                 $isRoomBased = $policyObj->room_based; // 1= yes
                 $dayDuration = $policyObj->day_duration; // 1= yes
