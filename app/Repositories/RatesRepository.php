@@ -267,7 +267,7 @@ class RatesRepository {
                 $buy_price = ceil($extra->buy_price*$exchangeRate);
                 $chargingPolicyMultiplicand = $this->multiplicandByChargingPolicy($extra, $startDate, $endDate, 1, 1, $totalNights);
                 $multiplicand = $chargingPolicyMultiplicand['multiplicand'];
-                $weekDaynights = $totalNights + (preg_match("/day/i",$price->policy_name) ? 1 : ($totalNights == 0 ? 1 : 0));
+                $weekDaynights = $totalNights + (preg_match("/day/i",$extra->policy_name) ? 1 : ($totalNights == 0 ? 1 : 0));
                 $weekDayPriceArr = $this->getPriceByConsideringWeekDay($service->id,$startDate, $extra->season_period_id,$extra->extra_id, $weekDaynights, $exchangeRate,$chargingPolicyMultiplicand); // getting price for per night per person
                 if(!empty($weekDayPriceArr)) {
                     $sell_price = $weekDayPriceArr['sell_price']; 
